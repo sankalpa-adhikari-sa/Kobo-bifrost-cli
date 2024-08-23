@@ -14,7 +14,7 @@ python --version
 ```
 2. Create a Kobo-toolbox account [Signup kobotoolbox](https://eu.kobotoolbox.org/accounts/signup/)
 3. Git should be already installed on your machine. To install git. [install git](https://git-scm.com/downloads)
-4. 
+   
 ## Installation
 To install Bifrost CLI Tool. Navigate to your terminal and run following command.
 ```python
