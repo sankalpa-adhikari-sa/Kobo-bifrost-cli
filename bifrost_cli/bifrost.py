@@ -1,28 +1,29 @@
-import sys
-import subprocess
-import pkg_resources
-import os
 import argparse
-import time
-
-def check_and_install_packages():
-    required = {'requests', 'python-dotenv', 'rich'}
-    installed = {pkg.key for pkg in pkg_resources.working_set}
-    missing = required - installed
-
-    if missing:
-        print("Installing missing packages...")
-        python = sys.executable
-        subprocess.check_call([python, '-m', 'pip', 'install', *missing], stdout=subprocess.DEVNULL)
-        print("All required packages have been installed.")
-    
-
-check_and_install_packages()
+import json
+import os
 import requests
 from dotenv import load_dotenv
 from rich.console import Console
 from rich.table import Table
 from typing import Optional, Union
+import time
+CONFIG_FILE = os.path.expanduser('~/.bifrost_config.json')
+
+def load_config():
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, 'r') as f:
+            return json.load(f)
+    return {}
+
+def save_config(config):
+    with open(CONFIG_FILE, 'w') as f:
+        json.dump(config, f)
+
+def set_config(key, value):
+    config = load_config()
+    config[key] = value
+    save_config(config)
+    print(f"{key.capitalize()} has been set.")
 
 class Bifrost:
     def __init__(self,base_url:str,api_key:str) -> None:
@@ -186,11 +187,12 @@ class Bifrost:
         
     pass
 
-
 def main():
-    load_dotenv() 
-
+    config = load_config()
+    
     parser = argparse.ArgumentParser(description="KOBO-Bifrost - CLI for CRUD application")
+    parser.add_argument("--config-api-key", help="Set the API key")
+    parser.add_argument("--config-api-url", help="Set the API URL")
     parser.add_argument("-ga", "--get-all", action="store_true", help="Gets all Kobo form UIDs and names")
     parser.add_argument("-c", "--create", metavar="FILEPATH", help="Creates a new form as draft")
     parser.add_argument("-rm", "--delete", metavar="ASSET_ID", help="Deletes the specified form")
@@ -201,17 +203,25 @@ def main():
     parser.add_argument("-urd", "--update-redeploy", nargs=2, metavar=("ASSET_ID", "FILEPATH"), help="Updates and redeploys a form")
     parser.add_argument("-swa", "--submit-without-auth", metavar="ASSET_ID", help="Enables 'Submit data without auth' feature")
     parser.add_argument("-pc", "--permission-clone", nargs=2, metavar=("TARGET_ASSET_ID", "SOURCE_ASSET_ID"), help="Clones permissions from another Kobo form")
-
+    
     args = parser.parse_args()
 
-    base_url = os.getenv("KOBO_API_BASE_URL")
-    api_key = os.getenv("KOBO_API_KEY")
-
-    if not base_url or not api_key:
-        print("Please set KOBO_API_BASE_URL and KOBO_API_KEY environment variables.")
+    if args.config_api_key:
+        set_config('KOBO_API_KEY', args.config_api_key)
         return
 
-    bifrost = Bifrost(base_url, api_key)
+    if args.config_api_url:
+        set_config('KOBO_API_BASE_URL', args.config_api_url)
+        return
+
+   
+    api_key = config.get('KOBO_API_KEY')
+    api_url = config.get('KOBO_API_BASE_URL')
+
+    if not api_key or not api_url:
+        print("API key or URL not set. Use --config-api-key and --config-api-url to set them.")
+        return
+    bifrost = Bifrost(api_url, api_key)
 
     if args.get_all:
         bifrost.get_all_asset()
@@ -238,6 +248,7 @@ def main():
         bifrost.clone_premission(args.permission_clone[0], args.permission_clone[1])
     else:
         parser.print_help()
+   
 
 if __name__ == "__main__":
     main()
