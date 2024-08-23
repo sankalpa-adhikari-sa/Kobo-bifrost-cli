@@ -2,7 +2,6 @@ import argparse
 import json
 import os
 import requests
-from dotenv import load_dotenv
 from rich.console import Console
 from rich.table import Table
 from typing import Optional, Union
