@@ -31,8 +31,8 @@ Bifrost cli provides following options to execute.
 | Short Option | Long Option | Arguments | Description |
 |--------------|-------------|-----------|-------------|
 | `-h` | `--help` | | Shows help message and exit |
-| `` | `--config-api-key` |`CONFIG_API_KEY` | Sets the KOBO API key |
-| `` | `--config-api-url` |`CONFIG_API_URL` | Sets the KOBO API Base URL |
+|  | `--config-api-key` |`CONFIG_API_KEY` | Sets the KOBO API key |
+|  | `--config-api-url` |`CONFIG_API_URL` | Sets the KOBO API Base URL |
 | `-ga` | `--get-all` | | Gets all Kobo form UIDs and names |
 | `-c` | `--create` | `FILEPATH` | Creates a new form as draft |
 | `-rm` | `--delete` | `ASSET_ID` | Deletes the specified form |
