@@ -39,6 +39,8 @@ pip uninstall bifrost-cli
 |`update <uid> <filepath>`	|Update the form with the specified `<uid>` using the file at `<filepath>`	|`bifrost update <uid> <filepath> [-d, --deploy] [-rd, --redeploy]`|
 |`redeploy <uid>`	|Redeploy the form with the specified `<uid>`	|`bifrost redeploy <uid>`|
 |`remove <uid>`	|Remove the form with the specified `<uid>`	|`bifrost remove <uid>`|
+|`asset xls <uid>`	|Downloads the xlsx asset file of specified uid `<uid>`	|`bifrost asset xls <uid>`|
+|`asset xml <uid>`	|Downloads the xml asset file of  specified `<uid>`	|`bifrost asset xml <uid>`|
 |`set-permissions <uid`>	|Set permissions for the form with the specified `<uid>`	|`bifrost set-permissions <uid> [--no-auth-sub]`|
 |`clone-permissions <source_uid> <target_uid>`|	Clone permissions from the form with `<source_uid>` to the form with `<target_uid>`	|`bifrost clone-permissions <source_uid> <target_uid>`|
 
@@ -57,7 +59,7 @@ The export command allows you to export your data in CSV or XLSX format
 |Command|	Description|	
 |---|---|
 |`export csv <uid> <filename> [OPTIONS]`| Export data to CSV format | 
-|`export xls <uid> <filename> [OPTIONS]`| Export data to XLS format | 
+|`export xls <uid> <filename> [OPTIONS]`| Export data to CSV format | 
 
 |Command|Short Options| Long Option|Values|Description|
 |---|---|---|---|---|

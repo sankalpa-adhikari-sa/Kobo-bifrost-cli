@@ -19,7 +19,6 @@ def load_config():
 def save_config(config):
     with open(CONFIG_FILE, 'w') as f:
         json.dump(config, f)
-
 def ensure_config(f):
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
@@ -212,6 +211,17 @@ class Bifrost:
         response= self._make_request("PATCH", url=clone_premission_url, data=cloned_premissions)
         if response.status_code == 200:
             print(f"Successfuly cloned premission from \n source_asset_id: {source_id}")
+        
+    def get_asset(self,form_id:str,file_path:str, asset_type:str) ->None:
+        asset_download_url=f"{self.base_url}assets/{form_id}.{asset_type}/"
+        response= self._make_request(method="GET", url=asset_download_url,params={'format': 'json'} )
+        if response.status_code == 200:
+             with open(file_path, "wb") as file:
+                file.write(response.content)
+                print(f"File downloaded successfully and saved to {file_path}.")
+        else:
+                print(f"Failed to download file. Status code: {response.status_code}")
+        
     
     def export_data(self, form_id:str, file_path:str, export_options)-> None:
         exports_url= f"{self.base_url}assets/{form_id}/exports/"
@@ -323,6 +333,29 @@ def clone_permissions(source_uid, target_uid):
     config = load_config()
     bifrost = Bifrost(config['KOBO_API_BASE_URL'], config['KOBO_API_KEY'])
     bifrost.clone_premission(target_uid, source_uid)
+
+@cli.group()
+def asset():
+    """Get Assets"""
+    pass
+
+@asset.command("xls")
+@click.argument('uid')
+@ensure_config
+def asset_csv(uid):
+    config = load_config()
+    bifrost = Bifrost(config['KOBO_API_BASE_URL'], config['KOBO_API_KEY'])
+    datapath = os.path.join(config["KOBO_DOWNLOADS"], f"{uid}.xlsx")
+    bifrost.get_asset(form_id=uid, file_path=datapath, asset_type="xls")
+
+@asset.command("xml")
+@click.argument('uid')
+@ensure_config
+def asset_csv(uid):
+    config = load_config()
+    bifrost = Bifrost(config['KOBO_API_BASE_URL'], config['KOBO_API_KEY'])
+    datapath = os.path.join(config["KOBO_DOWNLOADS"], f"{uid}.xml")
+    bifrost.get_asset(form_id=uid, file_path=datapath, asset_type="xml")
 
 @cli.group()
 def export():
