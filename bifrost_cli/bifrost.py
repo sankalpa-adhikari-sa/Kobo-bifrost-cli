@@ -24,12 +24,14 @@ def ensure_config(f):
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         config = load_config()
-        if not config.get('KOBO_API_BASE_URL') or not config.get('KOBO_API_KEY'):
+        if not config.get('KOBO_API_BASE_URL') or not config.get('KOBO_API_KEY')  or not config.get('KOBO_DOWNLOADS'):
             click.echo("API URL or API Key not set. Let's configure them now.")
             if not config.get('KOBO_API_BASE_URL'):
                 config['KOBO_API_BASE_URL'] = click.prompt("Please enter the API URL")
             if not config.get('KOBO_API_KEY'):
                 config['KOBO_API_KEY'] = click.prompt("Please enter the API Key", hide_input=True)
+            if not config.get('KOBO_DOWNLOADS'):
+                config['KOBO_DOWNLOADS'] = click.prompt("Please enter the path to folder to save data/assets", hide_input=True)
             save_config(config)
             click.echo("Configuration saved.")
         return f(*args, **kwargs)
@@ -53,14 +55,14 @@ class Bifrost:
     def _check_status(self,url:str) -> dict:
         return self._make_request("GET", url=url).json()
     
-    def _wait_for_import_completion(self, current_form_import_url:str)-> Union[None,dict]:
+    def _wait_for_completion(self, url:str)-> Union[None,dict]:
         while True :
-            status_response = self._check_status(current_form_import_url)
+            status_response = self._check_status(url)
             if status_response['status'] == 'processing':
-                print("Import is still processing. Checking again in a few seconds...")
+                print("Status: still processing. Checking again in a few seconds...")
                 time.sleep(10)
             elif status_response["status"]=="complete":
-                    print("XLS form import has completed successfully.")
+                    print("Status: completed successfully.")
                     return status_response
             else:
                 print("Something went wrong!")
@@ -78,7 +80,7 @@ class Bifrost:
                     response_data= response.json()
                     current_form_import_url= response_data["url"]
                     print(f"Import started. Checking status at: {current_form_import_url}")
-                    import_response= self._wait_for_import_completion(current_form_import_url)
+                    import_response= self._wait_for_completion(current_form_import_url)
                     return import_response
                 else:
                     print(f"Failed to start import. Status code: {response.status_code}")
@@ -210,6 +212,25 @@ class Bifrost:
         response= self._make_request("PATCH", url=clone_premission_url, data=cloned_premissions)
         if response.status_code == 200:
             print(f"Successfuly cloned premission from \n source_asset_id: {source_id}")
+    
+    def export_data(self, form_id:str, file_path:str, export_options)-> None:
+        exports_url= f"{self.base_url}assets/{form_id}/exports/"
+        response= self._make_request(method="POST", url=exports_url, data= export_options,params={'format': 'json'} )
+        if type(response) == type(None):
+            print("Somthing went Wrong! Try again....")
+            return
+        exp= response.json()["url"]
+        data_url_res= self._wait_for_completion(url=exp)
+        if type(data_url_res) == type(None):
+            print("Somthing went Wrong! Try again....")
+            return
+        data_res= self._make_request(method="GET", url=data_url_res["result"] )
+        if data_res.status_code == 200:
+             with open(file_path, "wb") as file:
+                file.write(data_res.content)
+                print(f"File downloaded successfully and saved to {file_path}.")
+        else:
+                print(f"Failed to download file. Status code: {data_res.status_code}")
         
     pass
 
@@ -304,6 +325,72 @@ def clone_permissions(source_uid, target_uid):
     bifrost.clone_premission(target_uid, source_uid)
 
 @cli.group()
+def export():
+    """Export data in various formats."""
+    pass
+
+@export.command('csv')
+@click.argument('uid')
+@click.argument('file_name')
+@click.option('-sep', '--separator', default='/', help='Group Separator for data.')
+@click.option('-c', '--current-version',is_flag=True, default=True, help='Include data from all Versions')
+@click.option('-gh', '--gheaders', is_flag=True, default=False, help='Include group headers in the export.')
+@click.option('-lang', '--language', default='_default', help='Language for the export: _default, _xml or language code.')
+@click.option('-nmu', '--no-media-url', is_flag=True, default=True, help='Include media URL in the export.')
+@click.option('-ms', '--multiple-select',  type=click.Choice(["details","both","summary"]), default='summary', help='Include media URL in the export.')
+@ensure_config
+def export_csv(uid, current_version, file_name, separator,multiple_select, gheaders, language, no_media_url):
+    """Export data as CSV."""
+    config = load_config()
+    bifrost = Bifrost(config['KOBO_API_BASE_URL'], config['KOBO_API_KEY'])
+    datapath = os.path.join(config["KOBO_DOWNLOADS"], file_name)
+
+    export_options = {
+        "fields":[],
+        'type': 'csv',
+        "fields_from_all_versions":current_version,
+        'group_sep': separator,
+        'hierarchy_in_labels': gheaders,
+        'lang': language,
+        "multiple_select":multiple_select,
+        'include_media_url': no_media_url,
+        'xls_types_as_text':False
+    }
+    
+    bifrost.export_data(form_id=uid, file_path=datapath, export_options=export_options)
+
+@export.command('xls')
+@click.argument('uid')
+@click.argument('file_name')
+@click.option('-sep', '--separator', default='/', help='Group Separator for data.')
+@click.option('-c', '--current-version',is_flag=True, default=True, help='Include data from all Versions')
+@click.option('-gh', '--gheaders', is_flag=True, default=False, help='Include group headers in the export.')
+@click.option('-lang', '--language', default='_default', help='Language for the export: _default, _xml or language code.')
+@click.option('-nmu', '--no-media-url', is_flag=True, default=True, help='Include media URL in the export.')
+@click.option('-xt', '--xtext', is_flag=True, default=False, help='Store data and number response as text.')
+@click.option('-ms', '--multiple-select',  type=click.Choice(["details","both","summary"]), default='summary', help='Include media URL in the export.')
+@ensure_config
+def export_xls(uid,xtext, current_version, file_name, separator,multiple_select, gheaders, language, no_media_url):
+    """Export data as XLS."""
+    config = load_config()
+    bifrost = Bifrost(config['KOBO_API_BASE_URL'], config['KOBO_API_KEY'])
+    datapath = os.path.join(config["KOBO_DOWNLOADS"], file_name)
+
+    export_options = {
+        "fields":[],
+        'type': 'xls',
+        "fields_from_all_versions":current_version,
+        'group_sep': separator,
+        'hierarchy_in_labels': gheaders,
+        'lang': language,
+        "multiple_select":multiple_select,
+        'include_media_url': no_media_url,
+        'xls_types_as_text':xtext
+    }
+    
+    bifrost.export_data(form_id=uid, file_path=datapath, export_options=export_options)
+
+@cli.group()
 def config():
     """Configure Bifrost CLI"""
     pass
@@ -327,12 +414,22 @@ def api_key(key):
     click.echo("API key has been set.")
 
 @config.command()
+@click.argument('folder_path')
+def downloads_path(folder_path):
+    """Set the Path to the folder for saving data and forms"""
+    config = load_config()
+    config['KOBO_DOWNLOADS'] = folder_path
+    save_config(config)
+    click.echo("Downloads path has been set.")
+
+@config.command()
 def view():
     """View current configuration"""
     if click.confirm("This will display sensitive data. Are you sure you want to continue?"):
         config = load_config()
         click.echo(f"API URL: {config.get('KOBO_API_BASE_URL', 'Not set')}")
         click.echo(f"API Key: {config.get('KOBO_API_KEY', 'Not set')}")
+        click.echo(f"Downloads Path: {config.get('KOBO_DOWNLOADS', 'Not set')}")
 
    
 def main():
