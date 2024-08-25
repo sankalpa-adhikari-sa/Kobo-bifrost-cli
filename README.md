@@ -20,90 +20,97 @@ To install/update Bifrost CLI Tool. Navigate to your terminal and run following 
 ```python
 pip install git+https://github.com/sankalpa-adhikari-sa/Kobo-bifrost-cli
 ```
-*Note: It is recommended to install this package by creating a python virtual enviroment to avoid any conficts that may arise due to changes in dependencies packages version. This CLI tool uses requests and rich packages as dependencies*
+*Note: It is recommended to install this package by creating a python virtual enviroment to avoid any conficts that may arise due to changes in dependencies packages version. This CLI tool uses click, requests and rich packages as dependencies*
 After successfully installing the CLI tool. Navigate to your terminal (if you are using python enviroment first activate your python enviroment on which cli is installed) and use `bifrost` command to use it's funtions.
 
+## Uninstall
+To uninstall Bifrost CLI Tool. Naviagate to your terminal and run following command.
+```python
+pip uninstall bifrost-cli
+```
 
-## Options
+## Commands
 
-Bifrost cli provides following options to execute.
+|Command|	Description	|Usage|
+|-------|--------------|-------------|
+|`list-assets`|	List all assets|	`bifrost list-assets`|
+|`create <filepath>`	|Create a new form from the file at `<filepath>`	|`bifrost create <filepath> [-d, --deploy]`|
+|`deploy <uid>`	|Deploy the form with the specified `<uid>`	|`bifrost deploy <uid>`|
+|`update <uid> <filepath>`	|Update the form with the specified `<uid>` using the file at `<filepath>`	|`bifrost update <uid> <filepath> [-d, --deploy] [-rd, --redeploy]`|
+|`redeploy <uid>`	|Redeploy the form with the specified `<uid>`	|`bifrost redeploy <uid>`|
+|`remove <uid>`	|Remove the form with the specified `<uid>`	|`bifrost remove <uid>`|
+|`set-permissions <uid`>	|Set permissions for the form with the specified `<uid>`	|`bifrost set-permissions <uid> [--no-auth-sub]`|
+|`clone-permissions <source_uid> <target_uid>`|	Clone permissions from the form with `<source_uid>` to the form with `<target_uid>`	|`bifrost clone-permissions <source_uid> <target_uid>`|
 
-| Short Option | Long Option | Arguments | Description |
-|--------------|-------------|-----------|-------------|
-| `-h` | `--help` | | Shows help message and exit |
-|  | `--config-api-key` |`CONFIG_API_KEY` | Sets the KOBO API key |
-|  | `--config-api-url` |`CONFIG_API_URL` | Sets the KOBO API Base URL |
-| `-ga` | `--get-all` | | Gets all Kobo form UIDs and names |
-| `-c` | `--create` | `FILEPATH` | Creates a new form as draft |
-| `-rm` | `--delete` | `ASSET_ID` | Deletes the specified form |
-| `-cd` | `--create-deploy` | `FILEPATH` | Creates and deploys a new form |
-| `-u` | `--update` | `ASSET_ID FILEPATH` | Updates a Kobo form |
-| `-d` | `--deploy` | `ASSET_ID` | Deploys a form |
-| `-rd` | `--redeploy` | `ASSET_ID` | Redeploys a form |
-| `-urd` | `--update-redeploy` | `ASSET_ID FILEPATH` | Updates and redeploys a form |
-| `-swa` | `--submit-without-auth` | `ASSET_ID` | Enables 'Submit data without auth' feature |
-| `-pc` | `--permission-clone` | `TARGET_ASSET_ID SOURCE_ASSET_ID` | Clones permissions from another Kobo form |
+## Configuration Commands
 
+The config group allows you to set up and view your Bifrost CLI configuration.
+
+|Command|	Description|	Usage|
+|---|---|---|
+|`config api-url <url>`|	Set the KoboToolbox API URL to `<url>`|	`bifrost config api-url <url>`|
+|`config api-key <key>`	|Set the KoboToolbox API key to `<key>`|	`bifrost config api-key <key>`|
+|`config view`	|Display the current configuration|	`bifrost config view`|
 ## Example
 
 To use Bifrost CLI you first need to setup your API URL and API Key.
 
-#### 1. Config Kobotoolbox API key ```--config-api-key``` 
+#### Config Kobotoolbox API key ```config api-key``` 
 ```bash
-bifrost --config-api-key CONFIG_API_KEY
+bifrost config api-key CONFIG_API_KEY
 ```
-#### 2. Config Kobotoolbox API URL ```--config-api-url``` 
+#### Config Kobotoolbox API URL ```config api-url``` 
 ```bash
-bifrost --config-api-url CONFIG_API_URL
+bifrost config api-url CONFIG_API_URL
 ```
-#### 3. Create Koboform ```-c``` 
+#### View Config ```config view``` 
+```bash
+bifrost config view
+```
+#### Create Koboform ```create``` 
 Creates a koboform as draft file.
 ```bash
-bifrost -c PATH_TO_XLS_FORM
+bifrost create PATH_TO_XLS_FORM
 ```
-#### 4. Deploy Koboform ```-d```
+#### Deploy Koboform ```deploy```
 
 ```bash
-bifrost -d ASSET_ID
+bifrost deploy ASSET_ID
 ```
-*Note: You cannot deploy form that is already deployed but can Redeploy the existing form. To redeploy use ```-rd``` flag*
 
-#### 5. Update Koboform ```-u```
-
-```bash
-bifrost -u ASSET_ID PATH_TO_XLS_FORM
-```
-*Note: If draft Kobo form is updated. You can deploy your form using `-d` flag as redeployment before deployment is not possible. Using `-rd` flag causes code ot break.*
-
-#### 6. Redeploy Updated Koboform ```-rd```
+#### Update Koboform ```update```
 
 ```bash
-bifrost -u ASSET_ID PATH_TO_XLS_FORM
+bifrost update ASSET_ID PATH_TO_XLS_FORM
 ```
-#### 7. Create and Deploy Koboform ```-cd```
+
+#### Redeploy Updated Koboform ```redeploy```
 
 ```bash
-bifrost -cd PATH_TO_XLS_FORM
+bifrost redeploy ASSET_ID PATH_TO_XLS_FORM
 ```
-#### 8. Update and Re-deploy Koboform ```-urd```
+#### Create and Deploy Koboform ```-d```
 
 ```bash
-bifrost -urd ASSET_ID PATH_TO_XLS_FORM
+bifrost create PATH_TO_XLS_FORM -d
 ```
-*Note: Update and Redeployment of draft form is not possible and causes error. To avoid this issue you need ot update and deploy using `-u` flag and `-d` flag sequencially*
+#### Update and Re-deploy Koboform ```-rd```
 
-#### 9. Remove a Koboform ```-rm```
 ```bash
-bifrost -rm ASSET_ID
+bifrost update ASSET_ID PATH_TO_XLS_FORM -rd
 ```
-#### 10. Enable submit dat without username and password premission ```-swa```
+
+#### Remove a Koboform ```remove```
 ```bash
-bifrost -swa ASSET_ID
+bifrost remove ASSET_ID
 ```
-#### 11. Clone premission form another Koboform ```-pc```
+#### Enable submit data without username and password premission ```--no-auth-sub```
 ```bash
-bifrost -pc TARGET_ASSET_ID SOURCE_ASSET_ID
+bifrost set-permissions ASSET_ID --no-auth-sub
+```
+#### Clone premission form another Koboform ```clone-permissions```
+```bash
+bifrost clone-permissions  SOURCE_ASSET_ID TARGET_ASSET_ID
 ```
 ```SOURCE_ASSET_ID```
  is the uid of Koboform form which you want to copy premission to your target form.
-

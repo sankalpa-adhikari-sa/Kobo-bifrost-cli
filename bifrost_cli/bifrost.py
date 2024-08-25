@@ -1,4 +1,4 @@
-import argparse
+import click
 import json
 import os
 import requests
@@ -6,6 +6,8 @@ from rich.console import Console
 from rich.table import Table
 from typing import Optional, Union
 import time
+import functools
+
 CONFIG_FILE = os.path.expanduser('~/.bifrost_config.json')
 
 def load_config():
@@ -18,11 +20,20 @@ def save_config(config):
     with open(CONFIG_FILE, 'w') as f:
         json.dump(config, f)
 
-def set_config(key, value):
-    config = load_config()
-    config[key] = value
-    save_config(config)
-    print(f"{key.capitalize()} has been set.")
+def ensure_config(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        config = load_config()
+        if not config.get('KOBO_API_BASE_URL') or not config.get('KOBO_API_KEY'):
+            click.echo("API URL or API Key not set. Let's configure them now.")
+            if not config.get('KOBO_API_BASE_URL'):
+                config['KOBO_API_BASE_URL'] = click.prompt("Please enter the API URL")
+            if not config.get('KOBO_API_KEY'):
+                config['KOBO_API_KEY'] = click.prompt("Please enter the API Key", hide_input=True)
+            save_config(config)
+            click.echo("Configuration saved.")
+        return f(*args, **kwargs)
+    return wrapper
 
 class Bifrost:
     def __init__(self,base_url:str,api_key:str) -> None:
@@ -78,15 +89,24 @@ class Bifrost:
 
     def get_all_asset(self)-> None:
         asset_url= f"{self.base_url}assets/"
+        def determine_modification_status(deployed_version_id, version_id):
+            if deployed_version_id is None:
+                return "-"
+            return "No" if version_id == deployed_version_id else "Yes"
+        
         response= self._make_request("GET", asset_url, params={'format': 'json'})
         table = Table(title="List of Assets")
         table.add_column("SN", justify="right", no_wrap=True)
         table.add_column("Name",overflow="fold")
         table.add_column("AssetID", justify="right",overflow="fold")
         table.add_column("Deployment status", justify="right")
+        table.add_column("Undeployed Update", justify="right")
         table.add_column("Submission Count", justify="right")
         for index,asset in enumerate(response.json()["results"]):
-            table.add_row(f"{index+1}", asset["name"], asset["uid"], asset["deployment_status"], f"{asset["deployment__submission_count"]}")
+            modification_status = determine_modification_status(
+            asset.get("deployed_version_id"),
+            asset.get("version_id"))
+            table.add_row(f"{index+1}", asset["name"], asset["uid"], asset["deployment_status"], modification_status, f"{asset["deployment__submission_count"]}")
         console = Console()
         console.print(table)
 
@@ -123,6 +143,10 @@ class Bifrost:
         }
         print("Starting Form Deployment procedure.......")
         response = self._make_request("POST", deployment_url, data=deployment_data,params={'format': 'json'})
+
+        if type(response) == type(None):
+            print("Error: The form cannot be deployed because it may have been deployed already. Please check the deployment status of the form and ensure it is not deployed previously before attempting to deploy.")
+            return
         res= response.json()
         table = Table(title="Deployment Details")
         table.add_column("SN", justify="right", overflow="fold")
@@ -147,6 +171,9 @@ class Bifrost:
         }
         
         response = self._make_request("PATCH", deployment_url, data=deployment_data, params={'format': 'json'})
+        if type(response) == type(None):
+            print("Error: The form cannot be redeployed because it may not have been deployed yet. Please check the deployment status of the form and ensure it is deployed before attempting to redeploy.")
+            return
         if response.status_code == 200:
             print("Successfully Re-deployed form")
             
@@ -186,68 +213,129 @@ class Bifrost:
         
     pass
 
-def main():
+@click.group()
+def cli():
+    """Bifrost CLI for interacting with KoboToolbox API"""
+    pass
+
+@cli.command()
+@ensure_config
+def list_assets():
+    """List all assets"""
     config = load_config()
-    
-    parser = argparse.ArgumentParser(description="KOBO-Bifrost - CLI for CRUD application")
-    parser.add_argument("--config-api-key", help="Set the API key")
-    parser.add_argument("--config-api-url", help="Set the API URL")
-    parser.add_argument("-ga", "--get-all", action="store_true", help="Gets all Kobo form UIDs and names")
-    parser.add_argument("-c", "--create", metavar="FILEPATH", help="Creates a new form as draft")
-    parser.add_argument("-rm", "--delete", metavar="ASSET_ID", help="Deletes the specified form")
-    parser.add_argument("-cd", "--create-deploy", metavar="FILEPATH", help="Creates and deploys a new form")
-    parser.add_argument("-u", "--update", nargs=2, metavar=("ASSET_ID", "FILEPATH"), help="Updates a Kobo form")
-    parser.add_argument("-d", "--deploy", metavar="ASSET_ID", help="Deploys a form")
-    parser.add_argument("-rd", "--redeploy", metavar="ASSET_ID", help="Redeploys a form")
-    parser.add_argument("-urd", "--update-redeploy", nargs=2, metavar=("ASSET_ID", "FILEPATH"), help="Updates and redeploys a form")
-    parser.add_argument("-swa", "--submit-without-auth", metavar="ASSET_ID", help="Enables 'Submit data without auth' feature")
-    parser.add_argument("-pc", "--permission-clone", nargs=2, metavar=("TARGET_ASSET_ID", "SOURCE_ASSET_ID"), help="Clones permissions from another Kobo form")
-    
-    args = parser.parse_args()
+    bifrost = Bifrost(config['KOBO_API_BASE_URL'], config['KOBO_API_KEY'])
+    bifrost.get_all_asset()
 
-    if args.config_api_key:
-        set_config('KOBO_API_KEY', args.config_api_key)
-        return
+@cli.command()
+@click.argument('filepath')
+@click.option('-d', '--deploy', is_flag=True, help='Deploy the form after creation')
+@ensure_config
+def create(filepath, deploy):
+    """Create a new form"""
+    config = load_config()
+    bifrost = Bifrost(config['KOBO_API_BASE_URL'], config['KOBO_API_KEY'])
+    form_id = bifrost.create_form(filepath)
+    if deploy and form_id:
+        bifrost.deploy_form(form_id)
 
-    if args.config_api_url:
-        set_config('KOBO_API_BASE_URL', args.config_api_url)
-        return
+@cli.command()
+@click.argument('uid')
+@ensure_config
+def deploy(uid):
+    """Deploy a form"""
+    config = load_config()
+    bifrost = Bifrost(config['KOBO_API_BASE_URL'], config['KOBO_API_KEY'])
+    bifrost.deploy_form(uid)
+
+@cli.command()
+@click.argument('uid')
+@click.argument('filepath')
+@click.option('-rd', '--redeploy', is_flag=True, help='Redeploy the deployed form after update')
+@click.option('-d', '--deploy', is_flag=True, help='Deploy the draft form after update')
+@ensure_config
+def update(uid, filepath, deploy, redeploy):
+    """Update a form"""
+    config = load_config()
+    bifrost = Bifrost(config['KOBO_API_BASE_URL'], config['KOBO_API_KEY'])
+    bifrost.update_form(uid, filepath)
+    if deploy:
+        bifrost.deploy_form(uid)
+    if redeploy:
+        bifrost.redeploy_form(uid)
+
+@cli.command()
+@click.argument('uid')
+@ensure_config
+def redeploy(uid):
+    """Redeploy a form"""
+    config = load_config()
+    bifrost = Bifrost(config['KOBO_API_BASE_URL'], config['KOBO_API_KEY'])
+    bifrost.redeploy_form(uid)
+
+@cli.command()
+@click.argument('uid')
+@ensure_config
+def remove(uid):
+    """Remove a form"""
+    config = load_config()
+    if click.confirm("This will permanently delete your form and its data. Are you sure you want to continue?"):
+        bifrost = Bifrost(config['KOBO_API_BASE_URL'], config['KOBO_API_KEY'])
+        bifrost.delete_form(uid)
+
+@cli.command()
+@click.argument('uid')
+@click.option('--no-auth-sub', is_flag=True, help='allow data submission without authentication.')
+@ensure_config
+def set_permissions(uid, no_auth):
+    """Set form permissions"""
+    config = load_config()
+    bifrost = Bifrost(config['KOBO_API_BASE_URL'], config['KOBO_API_KEY'])
+    if no_auth:
+        bifrost.submission_without_auth(uid)
+
+@cli.command()
+@click.argument('source_uid')
+@click.argument('target_uid')
+@ensure_config
+def clone_permissions(source_uid, target_uid):
+    """Clone permissions from [Source] one form to another [Target]"""
+    config = load_config()
+    bifrost = Bifrost(config['KOBO_API_BASE_URL'], config['KOBO_API_KEY'])
+    bifrost.clone_premission(target_uid, source_uid)
+
+@cli.group()
+def config():
+    """Configure Bifrost CLI"""
+    pass
+
+@config.command()
+@click.argument('url')
+def api_url(url):
+    """Set the API URL"""
+    config = load_config()
+    config['KOBO_API_BASE_URL'] = url
+    save_config(config)
+    click.echo("API URL has been set.")
+
+@config.command()
+@click.argument('key')
+def api_key(key):
+    """Set the API key"""
+    config = load_config()
+    config['KOBO_API_KEY'] = key
+    save_config(config)
+    click.echo("API key has been set.")
+
+@config.command()
+def view():
+    """View current configuration"""
+    if click.confirm("This will display sensitive data. Are you sure you want to continue?"):
+        config = load_config()
+        click.echo(f"API URL: {config.get('KOBO_API_BASE_URL', 'Not set')}")
+        click.echo(f"API Key: {config.get('KOBO_API_KEY', 'Not set')}")
 
    
-    api_key = config.get('KOBO_API_KEY')
-    api_url = config.get('KOBO_API_BASE_URL')
-
-    if not api_key or not api_url:
-        print("API key or URL not set. Use --config-api-key and --config-api-url to set them.")
-        return
-    bifrost = Bifrost(api_url, api_key)
-
-    if args.get_all:
-        bifrost.get_all_asset()
-    elif args.create:
-        bifrost.create_form(args.create)
-    elif args.delete:
-        bifrost.delete_form(args.delete)
-    elif args.create_deploy:
-        form_id = bifrost.create_form(args.create_deploy)
-        if form_id:
-            bifrost.deploy_form(form_id)
-    elif args.update:
-        bifrost.update_form(args.update[0], args.update[1])
-    elif args.deploy:
-        bifrost.deploy_form(args.deploy)
-    elif args.redeploy:
-        bifrost.redeploy_form(args.redeploy)
-    elif args.update_redeploy:
-        bifrost.update_form(args.update_redeploy[0], args.update_redeploy[1])
-        bifrost.redeploy_form(args.update_redeploy[0])
-    elif args.submit_without_auth:
-        bifrost.submission_without_auth(args.submit_without_auth)
-    elif args.permission_clone:
-        bifrost.clone_premission(args.permission_clone[0], args.permission_clone[1])
-    else:
-        parser.print_help()
-   
-
+def main():
+    cli()
 if __name__ == "__main__":
     main()
