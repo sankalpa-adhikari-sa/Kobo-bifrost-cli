@@ -57,7 +57,7 @@ The export command allows you to export your data in CSV or XLSX format
 |Command|	Description|	
 |---|---|
 |`export csv <uid> <filename> [OPTIONS]`| Export data to CSV format | 
-|`export xls <uid> <filename> [OPTIONS]`| Export data to CSV format | 
+|`export xls <uid> <filename> [OPTIONS]`| Export data to XLS format | 
 
 |Command|Short Options| Long Option|Values|Description|
 |---|---|---|---|---|
