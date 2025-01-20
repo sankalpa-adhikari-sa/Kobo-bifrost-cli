@@ -104,7 +104,7 @@ def test_initialize_project_empty_filename(
 
     assert result.exit_code == 0
     assert (
-        "Project name cannot be empty. Please enter a valid name."
+        "Project name cannot be empty or contain '='. Please enter a valid name."
         in result.stdout
     )
     assert (

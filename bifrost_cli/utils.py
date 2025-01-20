@@ -168,12 +168,12 @@ def get_asset_id_and_xlsxform_path():
             download_path = None
 
             for line in lines:
-                if line.startswith("Asset ID:"):
-                    asset_id = line.strip().split(":")[1].strip()
-                elif line.startswith("XlsForm Path:"):
-                    xlsx_path = line.strip().split(":")[1].strip()
-                elif line.startswith("Download Path:"):
-                    download_path = line.strip().split(":")[1].strip()
+                if line.startswith("Asset ID="):
+                    asset_id = line.strip().split("=")[1].strip()
+                elif line.startswith("XlsForm Path="):
+                    xlsx_path = line.split("=", 1)[1].strip()
+                elif line.startswith("Download Path="):
+                    download_path = line.split("=", 1)[1].strip()
 
             return asset_id, xlsx_path, download_path
     return None, None, None
@@ -196,29 +196,29 @@ def update_asset_info(
     download_path_updated = False
 
     for i, line in enumerate(lines):
-        if line.startswith("Asset ID:"):
+        if line.startswith("Asset ID="):
             if asset_id:
-                lines[i] = f"Asset ID: {asset_id}\n"
+                lines[i] = f"Asset ID= {asset_id}\n"
                 asset_id_updated = True
-        elif line.startswith("XlsForm Path:"):
+        elif line.startswith("XlsForm Path="):
             if xlsx_path:
-                lines[i] = f"XlsForm Path: {xlsx_path}\n"
+                lines[i] = f"XlsForm Path= {xlsx_path}\n"
                 xlsx_path_updated = True
-        elif line.startswith("Download Path:"):
+        elif line.startswith("Download Path="):
             if download_path:
-                lines[i] = f"Download Path: {download_path}\n"
+                lines[i] = f"Download Path= {download_path}\n"
                 download_path_updated = True
 
     if not asset_id_updated and asset_id:
-        lines.append(f"Asset ID: {asset_id}\n")
+        lines.append(f"Asset ID= {asset_id}\n")
         print("Added Asset ID to info.txt.")
 
     if not xlsx_path_updated and xlsx_path:
-        lines.append(f"XlsForm Path: {xlsx_path}\n")
+        lines.append(f"XlsForm Path= {xlsx_path}\n")
         print("Added XlsForm Path to info.txt.")
 
     if not download_path_updated and download_path:
-        lines.append(f"Download Path: {download_path}\n")
+        lines.append(f"Download Path= {download_path}\n")
         print("Added Download Path to info.txt.")
 
     with open(INFO_FILE, "w") as f:

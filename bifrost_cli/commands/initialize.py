@@ -117,10 +117,10 @@ def initialize_project():
     def get_valid_project_name() -> str:
         while True:
             project_name = Prompt.ask("Enter the name of your project").strip()
-            if project_name:
+            if project_name and "=" not in project_name:
                 return project_name
             print(
-                "[red]Project name cannot be empty. "
+                "[red]Project name cannot be empty or contain '='. "
                 "Please enter a valid name.[/red]"
             )
 
