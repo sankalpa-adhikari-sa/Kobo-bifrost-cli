@@ -35,20 +35,20 @@ pip uninstall bifrost
 
 ## Commands
 
-| Command             | Description                                                                                             | Options                                                                   |
-| ------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `init`              | Initializes a new project by creating a structured Excel workbook with optional conditional formatting. |                                                                           |
-| `list-assets`       | Lists all assets with basic information                                                                 |                                                                           |
-| `create`            | Creates a new asset in kobotoolbox                                                                      | `--filepath`<br> `[--deploy, -d]`                                         |
-| `view`              | View asset snapshots                                                                                    | `--asset-id`                                                              |
-| `deploy`            | Deploys an specified asset                                                                              | `--asset-id`                                                              |
-| `update`            | Updates a specified existing asset                                                                      | `--asset-id`<br>`--filepath` <br>`[--deploy, -d]`<br> `[--redeploy, -rd]` |
-| `redeploy`          | Redeploys a specified asset                                                                             | `--asset-id`                                                              |
-| `delete`            | Deletes a specified asset                                                                               | `--asset-id`                                                              |
-| `asset xls`         | Downloads specified asset in Xls format.                                                                | `--asset-id`<br> `--download-path`                                        |
-| `asset xml`         | Downloads specified asset in Xml format.                                                                | `--asset-id`<br> `--download-path`                                        |
-| `set-permissions`   | Sets asset permissions                                                                                  | `--asset-id`<br> `--no-auth-sub`                                          |
-| `clone-permissions` | Clones permissions from source project to another target project.                                       | `--from`<br> `--to`                                                       |
+| Command             | Description                                                                                             | Options                                                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `init`              | Initializes a new project by creating a structured Excel workbook with optional conditional formatting. |                                                                                                            |
+| `list-assets`       | Lists all assets with basic information                                                                 |                                                                                                            |
+| `create`            | Creates a new asset in kobotoolbox                                                                      | `--filepath`<br> `[--deploy, -d]`                                                                          |
+| `view`              | View asset snapshots                                                                                    | `--asset-id`                                                                                               |
+| `deploy`            | Deploys an specified asset                                                                              | `--asset-id`                                                                                               |
+| `update`            | Updates a specified existing asset                                                                      | `--asset-id`<br>`--filepath` <br>`[--deploy, -d]`<br> `[--redeploy, -rd]` <br>`[--preview-snapshots, -ps]` |
+| `redeploy`          | Redeploys a specified asset                                                                             | `--asset-id`                                                                                               |
+| `delete`            | Deletes a specified asset                                                                               | `--asset-id`                                                                                               |
+| `asset xls`         | Downloads specified asset in Xls format.                                                                | `--asset-id`<br> `--download-path`                                                                         |
+| `asset xml`         | Downloads specified asset in Xml format.                                                                | `--asset-id`<br> `--download-path`                                                                         |
+| `set-permissions`   | Sets asset permissions                                                                                  | `--asset-id`<br> `--no-auth-sub`                                                                           |
+| `clone-permissions` | Clones permissions from source project to another target project.                                       | `--from`<br> `--to`                                                                                        |
 
 ## Configuration Commands
 

@@ -111,6 +111,14 @@ def mock_deploy_response():
 
 
 @pytest.fixture
+def mock_view_asset_snapshot_response():
+    return {
+        "enketopreviewlink": "https://eu.kobotoolbox.org/api/v2/asset_snapshots/snapshot_id/preview",
+        "source": {"settings": {"form_title": "new"}},
+    }
+
+
+@pytest.fixture
 def mock_redeploy_response():
     return {
         "asset": {
@@ -190,6 +198,25 @@ def test_update_failure(
 
     assert result.exit_code == 0
     assert "❌ Failed to update form." in result.output
+
+
+def test_update_with_deploy_and_redeploy(runner):
+    """Test that providing both --deploy and --redeploy raises an error."""
+    result = runner.invoke(
+        update_app,
+        [
+            "--asset-id",
+            "valid_asset_id",
+            "--filepath",
+            "valid_filepath.xlsx",
+            "-d",
+            "-rd",
+        ],
+    )
+
+    assert result.exit_code != 0
+
+    assert "Error: You cannot specify both " in result.output.replace("\n", "")
 
 
 @patch("bifrost_cli.commands.deploy._make_request")
@@ -444,3 +471,80 @@ def test_update_redeploy_form_not_exist(
         "Error: The form you are trying to redeploy may not exist."
         in result.output
     )
+
+
+@patch("bifrost_cli.commands.view._make_request")
+@patch("bifrost_cli.commands.update._import_form")
+@patch("bifrost_cli.commands.update.update_asset_info")
+def test_update_preview_success(
+    mock_update_asset_info,
+    mock_import_form,
+    mock_make_request,
+    runner,
+    mock_keyring,
+    mock_response,
+    mock_view_asset_snapshot_response,
+):
+    mock_keyring["get_password"].side_effect = {
+        ("kobo-bifrost", "api_key"): "previous-api-key",
+        ("kobo-bifrost", "api_url"): "previous-api-url",
+    }.get
+
+    mock_response = MagicMock()
+    mock_response.status_code = 201
+    mock_response.json.return_value = mock_view_asset_snapshot_response
+    mock_make_request.return_value = mock_response
+
+    mock_import_form.return_value = mock_response
+    mock_update_asset_info.return_value = None
+    result = runner.invoke(
+        update_app,
+        [
+            "--asset-id",
+            "valid_asset_id",
+            "--filepath",
+            "valid_filepath.xlsx",
+            "-ps",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "✅ Successfully updated form" in result.output
+    assert "✅ Successfully fetched asset snaphsots" in result.output
+
+
+@patch("bifrost_cli.commands.view._make_request")
+@patch("bifrost_cli.commands.update._import_form")
+@patch("bifrost_cli.commands.update.update_asset_info")
+def test_update_asset_snapshot_invalid_asset_id(
+    mock_update_asset_info,
+    mock_import_form,
+    mock_make_request,
+    runner,
+    mock_keyring,
+    mock_response,
+    mock_view_asset_snapshot_response,
+):
+    mock_keyring["get_password"].side_effect = {
+        ("kobo-bifrost", "api_key"): "previous-api-key",
+        ("kobo-bifrost", "api_url"): "previous-api-url",
+    }.get
+
+    mock_make_request.return_value = None
+
+    mock_import_form.return_value = mock_response
+    mock_update_asset_info.return_value = None
+    result = runner.invoke(
+        update_app,
+        [
+            "--asset-id",
+            "valid_asset_id",
+            "--filepath",
+            "valid_filepath.xlsx",
+            "-ps",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "✅ Successfully updated form" in result.output
+    assert "❌ Failed to fetch asset snapshot." in result.output

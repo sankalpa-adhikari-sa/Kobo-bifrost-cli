@@ -10,7 +10,7 @@ from ..utils import (
 from rich import print
 from bifrost_cli.commands.deploy import deploy_form
 from bifrost_cli.commands.redeploy import redeploy_form
-
+from bifrost_cli.commands.view import view_asset_snapshot
 
 app = typer.Typer()
 
@@ -88,8 +88,20 @@ def update(
             "-rd", "--redeploy", help="Redeploy the project after creation."
         ),
     ] = False,
+    preview_snapshots: Annotated[
+        bool,
+        typer.Option(
+            "-ps",
+            "--preview-snapshots",
+            help="Preview snapshot of the updated asset.",
+        ),
+    ] = False,
 ):
     """Updates a specified existing asset(form)."""
+    if deploy and redeploy:
+        raise typer.BadParameter(
+            "Error: You cannot specify both '--deploy, -d' and '--redeploy, -rd' options at the same time."
+        )
     _, base_url = get_credentials()
     if not asset_id or not filepath:
         saved_asset_id, saved_filepath, _ = get_asset_id_and_xlsxform_path()
@@ -116,6 +128,10 @@ def update(
             deploy_form(asset_id=res_uid, base_url=base_url)
         if redeploy:
             redeploy_form(asset_id=res_uid, base_url=base_url)
+        if preview_snapshots:
+            res_snap = view_asset_snapshot(asset_id=res_uid, base_url=base_url)
+            if res_snap:
+                typer.launch(res_snap["enketopreviewlink"])
 
 
 if __name__ == "__main__":
