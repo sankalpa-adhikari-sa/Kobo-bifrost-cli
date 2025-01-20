@@ -13,7 +13,6 @@ python --version
 ```
 
 2. Create a Kobo-toolbox account [Signup kobotoolbox](https://eu.kobotoolbox.org/accounts/signup/)
-3. Git should be already installed on your machine. To install git. [install git](https://git-scm.com/downloads)
 
 ## Installation and Update
 
@@ -23,7 +22,7 @@ To install/update Bifrost CLI Tool. Navigate to your terminal and run following 
 pip install git+https://github.com/sankalpa-adhikari-sa/Kobo-bifrost-cli
 ```
 
-_Note: It is recommended to install this package by creating a python virtual enviroment to avoid any conficts that may arise due to changes in dependencies packages version. This CLI tool uses click, requests and rich packages as dependencies_
+\_Note: It is recommended to install this package by creating a python virtual enviroment to avoid any conficts that may arise due to changes in dependencies packages version.
 After successfully installing the CLI tool. Navigate to your terminal (if you are using python enviroment first activate your python enviroment on which cli is installed) and use `bifrost` command to use it's funtions.
 
 ## Uninstall
@@ -31,144 +30,166 @@ After successfully installing the CLI tool. Navigate to your terminal (if you ar
 To uninstall Bifrost CLI Tool. Naviagate to your terminal and run following command.
 
 ```python
-pip uninstall bifrost-cli
+pip uninstall bifrost
 ```
 
 ## Commands
 
-| Command                                       | Description                                                                         | Usage                                                              |
-| --------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `list-assets`                                 | List all assets                                                                     | `bifrost list-assets`                                              |
-| `create <filepath>`                           | Create a new form from the file at `<filepath>`                                     | `bifrost create <filepath> [-d, --deploy]`                         |
-| `deploy <uid>`                                | Deploy the form with the specified `<uid>`                                          | `bifrost deploy <uid>`                                             |
-| `update <uid> <filepath>`                     | Update the form with the specified `<uid>` using the file at `<filepath>`           | `bifrost update <uid> <filepath> [-d, --deploy] [-rd, --redeploy]` |
-| `redeploy <uid>`                              | Redeploy the form with the specified `<uid>`                                        | `bifrost redeploy <uid>`                                           |
-| `remove <uid>`                                | Remove the form with the specified `<uid>`                                          | `bifrost remove <uid>`                                             |
-| `asset xls <uid>`                             | Downloads the xlsx asset file of specified uid `<uid>`                              | `bifrost asset xls <uid>`                                          |
-| `asset xml <uid>`                             | Downloads the xml asset file of specified `<uid>`                                   | `bifrost asset xml <uid>`                                          |
-| `set-permissions <uid`>                       | Set permissions for the form with the specified `<uid>`                             | `bifrost set-permissions <uid> [--no-auth-sub]`                    |
-| `clone-permissions <source_uid> <target_uid>` | Clone permissions from the form with `<source_uid>` to the form with `<target_uid>` | `bifrost clone-permissions <source_uid> <target_uid>`              |
+| Command             | Description                                                                                             | Options                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `init`              | Initializes a new project by creating a structured Excel workbook with optional conditional formatting. |                                                                           |
+| `list-assets`       | Lists all assets with basic information                                                                 |                                                                           |
+| `create`            | Creates a new asset in kobotoolbox                                                                      | `--filepath`<br> `[--deploy, -d]`                                         |
+| `view`              | View asset snapshots                                                                                    | `--asset-id`                                                              |
+| `deploy`            | Deploys an specified asset                                                                              | `--asset-id`                                                              |
+| `update`            | Updates a specified existing asset                                                                      | `--asset-id`<br>`--filepath` <br>`[--deploy, -d]`<br> `[--redeploy, -rd]` |
+| `redeploy`          | Redeploys a specified asset                                                                             | `--asset-id`                                                              |
+| `delete`            | Deletes a specified asset                                                                               | `--asset-id`                                                              |
+| `asset xls`         | Downloads specified asset in Xls format.                                                                | `--asset-id`<br> `--download-path`                                        |
+| `asset xml`         | Downloads specified asset in Xml format.                                                                | `--asset-id`<br> `--download-path`                                        |
+| `set-permissions`   | Sets asset permissions                                                                                  | `--asset-id`<br> `--no-auth-sub`                                          |
+| `clone-permissions` | Clones permissions from source project to another target project.                                       | `--from`<br> `--to`                                                       |
 
 ## Configuration Commands
 
 The config group allows you to set up and view your Bifrost CLI configuration.
 
-| Command                 | Description                                          | Usage                                     |
-| ----------------------- | ---------------------------------------------------- | ----------------------------------------- |
-| `config api-url <url>`  | Set the KoboToolbox API URL to `<url>`               | `bifrost config api-url <url>`            |
-| `config api-key <key>`  | Set the KoboToolbox API key to `<key>`               | `bifrost config api-key <key>`            |
-| `config view`           | Display the current configuration                    | `bifrost config view`                     |
-| `config downloads-path` | Set the Path to the folder for saving data and forms | `bifrost downloads-path <path_to_folder>` |
+| Command              | Description                                          | Options                    |
+| -------------------- | ---------------------------------------------------- | -------------------------- |
+| `set-credentials`    | Set credentials by providing an API key and API URL. | `--api-key`<br>`--api-url` |
+| `remove-credentials` | Clear saved API credentials (API key and API URL).   |                            |
+| `status`             | Check the current credentials status.                | `bifrost config view`      |
 
 ## Export Commands
 
-The export command allows you to export your data in CSV or XLSX format
-|Command| Description|
-|---|---|
-|`export csv <uid> <filename> [OPTIONS]`| Export data to CSV format |
-|`export xls <uid> <filename> [OPTIONS]`| Export data to CSV format |
-
-| Command        | Short Options | Long Option         | Values                            | Description                                                                   |
-| -------------- | ------------- | ------------------- | --------------------------------- | ----------------------------------------------------------------------------- |
-| `csv` or `xls` | `-sep`        | `--separator`       | `TEXT`                            | Group Separator for data.                                                     |
-| `csv` or `xls` | `-c`          | `--current-version` |                                   | Include data from all Versions default=False                                  |
-| `csv` or `xls` | `-gh`         | `--gheaders`        |                                   | Include group headers in the export. default=True                             |
-| `csv` or `xls` | `-lang`       | `--language`        | `[_default,_xml, <languagecode>]` | Language for the export: \_default, \_xml or language code. default=\_default |
-| `csv` or `xls` | `-nmu`        | `--no-media-url`    |                                   | Include media URL in the export. default=False                                |
-| `csv` or `xls` | `-ms`         | `--multiple-select` | `[details, both, summary]`        | Export select many question as default=summary                                |
-| `xls`          | `-xt`         | `--xtext`           |                                   | Store data and number response as text. default=False                         |
+| Command                      | Option                     | Values                            | Description                                                                   |
+| ---------------------------- | -------------------------- | --------------------------------- | ----------------------------------------------------------------------------- |
+| `export csv` or `export xls` | `--output-name`            | `TEXT`                            | Output file name                                                              |
+|                              | `--asset-id`               | `TEXT`                            | The asset ID of the asset to export data.                                     |
+|                              | `--download-path`          | `TEXT`                            | Download path. Defaults to the current directory.                             |
+|                              | `[--separator, -sep]`      | `TEXT`                            | Group Separator for data. Default= /                                          |
+|                              | `[--current-version, -c]`  |                                   | Include data from all Versions default=False                                  |
+|                              | `[--gheaders, -gh]`        |                                   | Include group headers in the export. default=True                             |
+|                              | `[--language, -lang]`      | `[_default,_xml, <languagecode>]` | Language for the export: \_default, \_xml or language code. default=\_default |
+|                              | `-[-no-media-url, -nmu]`   |                                   | Include media URL in the export. default=False                                |
+|                              | `[--multiple-select, -ms]` | `[details, both, summary]`        | Export select many question as default=summary                                |
+| `export xls`                 | `[--xtext, -xt]`           |                                   | Store data and number response as text. default=False                         |
 
 ## Example
 
 To use Bifrost CLI you first need to setup your API URL and API Key.
 
-#### Config Kobotoolbox API key `config api-key`
+#### Configure Kobotoolbox Credentials `set-credentials`
 
 ```bash
-bifrost config api-key CONFIG_API_KEY
+bifrost set-credentials --api-key CONFIG_API_KEY --api-url CONFIG_API_URL
 ```
 
-#### Config Kobotoolbox API URL `config api-url`
+#### View Status `status`
 
 ```bash
-bifrost config api-url CONFIG_API_URL
+bifrost status
 ```
 
-#### View Config `config view`
+#### Remove Kobotoolbox Credentials `remove-credentials`
 
 ```bash
-bifrost config view
+bifrost remove-credentials
 ```
 
-#### Config Downloads folder path `config downloads-path`
+#### Initialize a new project `init`
+
+Creates a new XLS form locally.
 
 ```bash
-bifrost config downloads-path CONFIG_DOWNLOADS_PATH
+bifrost init
 ```
 
-#### Create Koboform `create`
+#### Create Koboform in Kobotoolbox platform `create`
 
-Creates a koboform as draft file.
+Creates a koboform as draft file in kobotoolbox.
 
 ```bash
-bifrost create PATH_TO_XLS_FORM
+bifrost create --filepath PATH_TO_XLS_FORM
 ```
 
 #### Deploy Koboform `deploy`
 
 ```bash
-bifrost deploy ASSET_ID
+bifrost deploy --asset-id ASSET_ID
+```
+
+#### View Koboform snapshot `view`
+
+```bash
+bifrost view --asset-id ASSET_ID
 ```
 
 #### Update Koboform `update`
 
 ```bash
-bifrost update ASSET_ID PATH_TO_XLS_FORM
+bifrost update --asset-id ASSET_ID --filepath PATH_TO_XLS_FORM
 ```
 
 #### Redeploy Updated Koboform `redeploy`
 
 ```bash
-bifrost redeploy ASSET_ID PATH_TO_XLS_FORM
+bifrost redeploy --asset-id ASSET_ID
 ```
 
 #### Create and Deploy Koboform `-d`
 
 ```bash
-bifrost create PATH_TO_XLS_FORM -d
+bifrost create --filepath PATH_TO_XLS_FORM -d
 ```
 
 #### Update and Re-deploy Koboform `-rd`
 
 ```bash
-bifrost update ASSET_ID PATH_TO_XLS_FORM -rd
+bifrost update --asset-id ASSET_ID --filepath PATH_TO_XLS_FORM -rd
 ```
 
-#### Remove a Koboform `remove`
+#### Delete a Koboform `delete`
 
 ```bash
-bifrost remove ASSET_ID
+bifrost delete --asset-id ASSET_ID
 ```
 
 #### Download Data`csv|xls`
 
 ```bash
-bifrost export xls ASSET_ID FILE_NAME -sep "/" -c -gh -lang "Nepali (ne)" -nmu -xt -ms "both"
+bifrost export xls --asset-id ASSET_ID --output-name FILE_NAME --download-path DOWNLOAD_DIR_PATH -sep "/" -c -gh -lang "Nepali (ne)" -nmu -xt -ms "both"
 ```
-
-_Note: Provide file name with correct extension you want the data to export. For example my_data.xlsx_
 
 #### Enable submit data without username and password premission `--no-auth-sub`
 
 ```bash
-bifrost set-permissions ASSET_ID --no-auth-sub
+bifrost set-permissions --asset-id ASSET_ID --no-auth-sub
 ```
 
 #### Clone premission form another Koboform `clone-permissions`
 
 ```bash
-bifrost clone-permissions  SOURCE_ASSET_ID TARGET_ASSET_ID
+bifrost clone-permissions  --from SOURCE_ASSET_ID --to TARGET_ASSET_ID
 ```
 
 `SOURCE_ASSET_ID`
 is the uid of Koboform form which you want to copy premission to your target form.
+
+## Autofill asset-id, download-path, file-path.
+
+Additionally Bifrost cli creates `.bifrost/info.txt` folder in your project directory which saves asset-id , download-path, and file-path while using the commands. If the arguments are not provided bifrost uses the values from the `bifrost/info.txt` file.
+
+For example:
+
+If both ASSET_ID and PATH_TO_XLS_FORM is availabe in info.txt file
+
+```bash
+bifrost update --asset-id ASSET_ID --filepath PATH_TO_XLS_FORM
+```
+
+will be reduced to just
+
+```bash
+bifrost update
+```

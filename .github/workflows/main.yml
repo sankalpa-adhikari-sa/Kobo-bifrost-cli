@@ -1,0 +1,72 @@
+name: Python CLI CI/CD
+
+on:
+  push:
+    tags:
+      - "v*"
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11"]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsecret-1-0 libsecret-1-dev libdbus-1-dev libglib2.0-dev
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest keyrings.alt secretstorage dbus-python
+          pip install -e .
+
+      - name: Set up keyring backend
+        run: |
+          mkdir -p ~/.local/share/python_keyring
+          echo '[backend]' > ~/.local/share/python_keyring/keyringrc.cfg
+          echo 'default-keyring=keyrings.alt.file.PlaintextKeyring' >> ~/.local/share/python_keyring/keyringrc.cfg
+
+      - name: Run tests
+        run: |
+          pytest -v --log-cli-level=DEBUG tests/
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+
+      - name: Build package
+        run: python -m build
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*
+          generate_release_notes: true
