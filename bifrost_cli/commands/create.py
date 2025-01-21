@@ -11,7 +11,7 @@ from ..utils import (
     get_asset_id_and_xlsxform_path,
 )
 from rich import print
-
+from bifrost_cli.commands.view import view_asset_snapshot
 from bifrost_cli.commands.deploy import deploy_form
 from typing import Union
 
@@ -76,6 +76,14 @@ def create(
             "-d", "--deploy", help="Deploy the project after creation."
         ),
     ] = False,
+    preview_snapshots: Annotated[
+        bool,
+        typer.Option(
+            "-ps",
+            "--preview-snapshots",
+            help="Preview snapshot of the created asset.",
+        ),
+    ] = False,
 ):
     """
     Creates a new asset(form) in Kobotoolbox.
@@ -94,8 +102,15 @@ def create(
     if asset_id and filepath:
         update_asset_info(asset_id=asset_id, xlsx_path=filepath)
 
-    if deploy and asset_id:
-        deploy_form(asset_id=asset_id, base_url=base_url)
+    if asset_id is not None:
+        if deploy:
+            deploy_form(asset_id=asset_id, base_url=base_url)
+        if preview_snapshots:
+            res_snap = view_asset_snapshot(
+                asset_id=asset_id, base_url=base_url
+            )
+            if res_snap:
+                typer.launch(res_snap["enketopreviewlink"])
 
 
 if __name__ == "__main__":

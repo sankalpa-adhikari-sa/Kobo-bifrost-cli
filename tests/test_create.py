@@ -16,6 +16,14 @@ def isolated_filesystem(runner):
         yield fs
 
 
+@pytest.fixture
+def mock_view_asset_snapshot_response():
+    return {
+        "enketopreviewlink": "https://eu.kobotoolbox.org/api/v2/asset_snapshots/snapshot_id/preview",
+        "source": {"settings": {"form_title": "new"}},
+    }
+
+
 @pytest.fixture(autouse=True)
 def mock_keyring():
     with patch("keyring.get_password") as mock_get_password, patch(
@@ -92,6 +100,80 @@ def test_create_success(
     assert result.exit_code == 0
     assert "Information of created asset" in result.stdout
     assert "aLgFhiUU9SECuWh2Q8oHtg" in result.stdout
+    mock_import_form.assert_called_once()
+
+
+@patch("bifrost_cli.commands.view._make_request")
+@patch("bifrost_cli.commands.create._import_form")
+@patch("bifrost_cli.commands.create.update_asset_info")
+def test_create_preview_success(
+    mock_update_asset_info,
+    mock_import_form,
+    mock_make_request,
+    mock_response,
+    runner,
+    mock_keyring,
+    isolated_filesystem,
+    mock_view_asset_snapshot_response,
+):
+    mock_keyring["get_password"].side_effect = {
+        ("kobo-bifrost", "api_key"): "previous-api-key",
+        ("kobo-bifrost", "api_url"): "previous-api-url",
+    }.get
+    mock_response_preview = MagicMock()
+    mock_response_preview.status_code = 201
+    mock_response_preview.json.return_value = mock_view_asset_snapshot_response
+    mock_make_request.return_value = mock_response_preview
+
+    mock_import_form.return_value = mock_response
+    mock_update_asset_info.return_value = None
+    result = runner.invoke(
+        app,
+        [
+            "--filepath",
+            isolated_filesystem,
+            "-ps",
+        ],
+    )
+    assert result.exit_code == 0
+    assert "Information of created asset" in result.stdout
+    assert "aLgFhiUU9SECuWh2Q8oHtg" in result.stdout
+    assert "✅ Successfully fetched asset snaphsots" in result.output
+    mock_import_form.assert_called_once()
+
+
+@patch("bifrost_cli.commands.view._make_request")
+@patch("bifrost_cli.commands.create._import_form")
+@patch("bifrost_cli.commands.create.update_asset_info")
+def test_create_preview_failure(
+    mock_update_asset_info,
+    mock_import_form,
+    mock_make_request,
+    mock_response,
+    runner,
+    mock_keyring,
+    isolated_filesystem,
+):
+    mock_keyring["get_password"].side_effect = {
+        ("kobo-bifrost", "api_key"): "previous-api-key",
+        ("kobo-bifrost", "api_url"): "previous-api-url",
+    }.get
+    mock_make_request.return_value = None
+
+    mock_import_form.return_value = mock_response
+    mock_update_asset_info.return_value = None
+    result = runner.invoke(
+        app,
+        [
+            "--filepath",
+            isolated_filesystem,
+            "-ps",
+        ],
+    )
+    assert result.exit_code == 0
+    assert "Information of created asset" in result.stdout
+    assert "aLgFhiUU9SECuWh2Q8oHtg" in result.stdout
+    assert "❌ Failed to fetch asset snapshot." in result.output
     mock_import_form.assert_called_once()
 
 

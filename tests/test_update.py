@@ -490,10 +490,10 @@ def test_update_preview_success(
         ("kobo-bifrost", "api_url"): "previous-api-url",
     }.get
 
-    mock_response = MagicMock()
-    mock_response.status_code = 201
-    mock_response.json.return_value = mock_view_asset_snapshot_response
-    mock_make_request.return_value = mock_response
+    mock_response_preview = MagicMock()
+    mock_response_preview.status_code = 201
+    mock_response_preview.json.return_value = mock_view_asset_snapshot_response
+    mock_make_request.return_value = mock_response_preview
 
     mock_import_form.return_value = mock_response
     mock_update_asset_info.return_value = None
