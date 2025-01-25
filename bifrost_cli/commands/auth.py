@@ -48,19 +48,19 @@ def delete_credentials() -> None:
 
 @app.command()
 def set_credentials(
-    api_key: Optional[str] = typer.Option(
-        None, prompt=False, help="Your API key."
-    ),
     api_url: Optional[str] = typer.Option(
         None, prompt=False, help="Your API URL."
+    ),
+    api_key: Optional[str] = typer.Option(
+        None, prompt=False, help="Your API key."
     ),
 ) -> None:
     """
     Set credentials by providing an API key and API URL.
 
     Args:
-        api_key (str): Kobo toolbox API key
         api_url (str): Kobo toolbox API URL
+        api_key (str): Kobo toolbox API key
     """
     existing_api_key, existing_api_url = get_credentials()
 
@@ -73,10 +73,10 @@ def set_credentials(
             print("✅ Existing credentials retained. No changes made.")
             return
 
-    if not api_key:
-        api_key = typer.prompt("Please enter your API key")
     if not api_url:
         api_url = typer.prompt("Please enter your API URL")
+    if not api_key:
+        api_key = typer.prompt("Please enter your API key")
 
     save_credentials(api_key, api_url)
     print("✅ Credentials saved securely.")

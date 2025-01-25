@@ -77,15 +77,15 @@ def test_login_with_credentials_no_overrride(runner, mock_keyring):
 def test_login_interactive(runner, mock_keyring):
     mock_keyring["get_password"].return_value = None
     result = runner.invoke(
-        app, ["set-credentials"], input="1234\nwww.test.com\n"
+        app, ["set-credentials"], input="www.test.com\n1234\n"
     )
     assert result.exit_code == 0
     assert "Credentials saved securely." in result.stdout
     mock_keyring["set_password"].assert_any_call(
-        "kobo-bifrost", "api_key", "1234"
+        "kobo-bifrost", "api_url", "www.test.com"
     )
     mock_keyring["set_password"].assert_any_call(
-        "kobo-bifrost", "api_url", "www.test.com"
+        "kobo-bifrost", "api_key", "1234"
     )
 
 
@@ -95,15 +95,15 @@ def test_login_interactive_override(runner, mock_keyring):
         "previous-api-url",
     ]
     result = runner.invoke(
-        app, ["set-credentials"], input="y\n1234\nwww.test.com\n"
+        app, ["set-credentials"], input="y\nwww.test.com\n1234\n"
     )
     assert result.exit_code == 0
     assert "Credentials saved securely." in result.stdout
     mock_keyring["set_password"].assert_any_call(
-        "kobo-bifrost", "api_key", "1234"
+        "kobo-bifrost", "api_url", "www.test.com"
     )
     mock_keyring["set_password"].assert_any_call(
-        "kobo-bifrost", "api_url", "www.test.com"
+        "kobo-bifrost", "api_key", "1234"
     )
 
 
