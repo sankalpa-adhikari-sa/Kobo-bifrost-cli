@@ -4,15 +4,21 @@ on:
   push:
     tags:
       - "v*"
+  pull_request:
+    branches:
+      - main
+
 permissions:
   contents: write
 
 jobs:
   test:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11"]
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v3
@@ -22,26 +28,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libsecret-1-0 libsecret-1-dev libdbus-1-dev libglib2.0-dev
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest keyrings.alt secretstorage dbus-python
-          pip install -e .
+          pip install tox tox-gh-actions
 
-      - name: Set up keyring backend
-        run: |
-          mkdir -p ~/.local/share/python_keyring
-          echo '[backend]' > ~/.local/share/python_keyring/keyringrc.cfg
-          echo 'default-keyring=keyrings.alt.file.PlaintextKeyring' >> ~/.local/share/python_keyring/keyringrc.cfg
-
-      - name: Run tests
-        run: |
-          pytest -v --log-cli-level=DEBUG tests/
+      - name: Test with tox
+        run: tox
 
   release:
     needs: test

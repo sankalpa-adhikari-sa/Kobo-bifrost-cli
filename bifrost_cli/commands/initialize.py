@@ -1,14 +1,12 @@
+from pathlib import Path
+
+import pandas as pd
 import typer
 from rich import print
-from rich.prompt import Prompt, Confirm
-import pandas as pd
-from pathlib import Path
 from rich.progress import Progress, SpinnerColumn, TextColumn
-from ..utils import (
-    initialize_bifrost,
-    get_asset_id_and_xlsxform_path,
-    update_asset_info,
-)
+from rich.prompt import Confirm, Prompt
+
+from bifrost_cli.utils import initialize_bifrost
 
 app = typer.Typer()
 
@@ -69,10 +67,8 @@ def create_workbook_with_formatting(
 
     survey_df = pd.DataFrame(columns=survey_headers)
     choices_df = pd.DataFrame(columns=choices_headers)
-    settings_df = pd.DataFrame(columns=settings_headers)
-    settings_df.loc[len(settings_df)] = [project_name] + [""] * (
-        len(settings_headers) - 1
-    )
+    initial_settings = [[project_name] + [""] * (len(settings_headers) - 1)]
+    settings_df = pd.DataFrame(initial_settings, columns=settings_headers)
 
     survey_df.to_excel(writer, sheet_name="survey", index=False)
     choices_df.to_excel(writer, sheet_name="choices", index=False)
@@ -108,7 +104,7 @@ def create_workbook_with_formatting(
 
 
 @app.command("init")
-def initialize_project():
+def initialize_project() -> None:
     """
     Initializes a new project by creating a structured Excel workbook
     with optional conditional formatting.
@@ -116,7 +112,7 @@ def initialize_project():
 
     def get_valid_project_name() -> str:
         while True:
-            project_name = Prompt.ask("Enter the name of your project").strip()
+            project_name = str(Prompt.ask("Enter the name of your project")).strip()
             if project_name and "=" not in project_name:
                 return project_name
             print(
@@ -142,9 +138,7 @@ def initialize_project():
         project_dir_path.mkdir(parents=True)
 
     if not project_dir_path.is_dir():
-        print(
-            f"[red]The specified path '{project_dir_path}' is not a directory.[/red]"
-        )
+        print(f"[red]The specified path '{project_dir_path}' is not a directory.[/red]")
         raise typer.Abort()
 
     project_file_name = f"{project_name}.xlsx"
@@ -155,9 +149,7 @@ def initialize_project():
             f"[red]The file '{project_file_path.name}' already exists. "
             "Overwrite it?[/red]"
         ):
-            print(
-                "[bold red]Aborting to avoid overwriting existing file.[/bold red]"
-            )
+            print("[bold red]Aborting to avoid overwriting existing file.[/bold red]")
             raise typer.Abort()
 
     enable_formatting = Confirm.ask(
@@ -168,9 +160,7 @@ def initialize_project():
         TextColumn("[progress.description]{task.description}"),
         transient=True,
     ) as progress:
-        task = progress.add_task(
-            description="Fetching asset data...", start=False
-        )
+        task = progress.add_task(description="Fetching asset data...", start=False)
 
         progress.start_task(task)
 
@@ -181,11 +171,15 @@ def initialize_project():
         )
         progress.update(task, completed=100)
 
+    initialize_bifrost(
+        xlsx_path=project_file_path,
+        bifrost_dir=project_dir_path / ".bifrost",
+    )
+
     print(
         f"[green]Project '{project_name}' has been successfully created at "
         f"'{project_file_path}'.[/green]"
     )
-    update_asset_info(xlsx_path=project_file_path)
 
 
 if __name__ == "__main__":

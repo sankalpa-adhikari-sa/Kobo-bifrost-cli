@@ -1,27 +1,6 @@
-import pytest
-from typer.testing import CliRunner
+from unittest.mock import MagicMock, patch
+
 from bifrost_cli.commands.list_asset import app
-from unittest.mock import patch, MagicMock
-
-
-@pytest.fixture
-def runner():
-    return CliRunner()
-
-
-@pytest.fixture(autouse=True)
-def mock_keyring():
-    with patch("keyring.get_password") as mock_get_password, patch(
-        "keyring.set_password"
-    ) as mock_set_password:
-        mock_get_password.return_value = "test-value"
-        yield {
-            "get_password": mock_get_password,
-            "set_password": mock_set_password,
-        }
-
-
-SERVICE_NAME = "kobo-bifrost"
 
 
 @patch("bifrost_cli.commands.list_asset._make_request")
@@ -61,4 +40,4 @@ def test_list_asset(
     result = runner.invoke(app)
 
     assert result.exit_code == 0
-    assert "List of Assets" in result.output
+    assert "List of Assets" in result.stdout

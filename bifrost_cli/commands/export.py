@@ -1,21 +1,24 @@
-from typing import Optional
-from typing_extensions import Annotated
+import os
+from pathlib import Path
+from typing import Any, Dict, Optional
+
 import typer
-from ..utils import (
-    get_credentials,
+from rich import print
+from rich.prompt import Confirm
+from typing_extensions import Annotated
+
+from bifrost_cli.utils import (
     _make_request,
     _wait_for_completion,
     get_asset_id_and_xlsxform_path,
+    get_credentials,
 )
-from rich import print
-
-import os
 
 app = typer.Typer()
 
 
 def export_data(
-    asset_id: str, base_url: str, file_path: str, export_options
+    asset_id: str, base_url: str, file_path: str, export_options: Dict[str, Any]
 ) -> None:
     """
     Exports the submission data
@@ -24,7 +27,8 @@ def export_data(
         base_url (str): The base URL of the API.
         asset_id (str): The ID of the form.
         file_path (str): Local filepath to save the submission data.
-        export_options (dict): Export configuration option for the data to download.
+        export_options (dict):
+            Export configuration option for the data to download.
     """
     exports_url = f"{base_url}assets/{asset_id}/exports/"
     response = _make_request(
@@ -33,9 +37,10 @@ def export_data(
         data=export_options,
         params={"format": "json"},
     )
-    if response is None:
+    if response.status_code == 400:
         print("Somthing went Wrong! Try again....")
         return
+
     exp = response.json()["url"]
 
     data_url_res = _wait_for_completion(url=exp)
@@ -57,14 +62,17 @@ def export_data(
 def csv(
     output_name: Annotated[str, typer.Option(help="Output file name.")],
     asset_id: Annotated[
-        str,
+        Optional[str],
         typer.Option(
             "--asset-id",
-            help="The asset ID of the asset to export data. Provide this or ensure it is saved.",
+            help=(
+                "The asset ID of the asset to export data."
+                " Provide this or ensure it is saved."
+            ),
         ),
     ] = None,
     download_path: Annotated[
-        Optional[str],
+        Optional[Path],
         typer.Option(help="Download path. Defaults to the current directory."),
     ] = None,
     separator: Annotated[
@@ -73,15 +81,11 @@ def csv(
     ] = "/",
     current_version: Annotated[
         bool,
-        typer.Option(
-            "-c", "--current-version", help="Include data from all versions."
-        ),
+        typer.Option("-c", "--current-version", help="Include data from all versions."),
     ] = True,
     gheaders: Annotated[
         bool,
-        typer.Option(
-            "-gh", "--gheaders", help="Include group headers in the export."
-        ),
+        typer.Option("-gh", "--gheaders", help="Include group headers in the export."),
     ] = False,
     language: Annotated[
         str,
@@ -93,9 +97,7 @@ def csv(
     ] = "_default",
     no_media_url: Annotated[
         bool,
-        typer.Option(
-            "-nmu", "--no-media-url", help="Include media URL in the export."
-        ),
+        typer.Option("-nmu", "--no-media-url", help="Include media URL in the export."),
     ] = True,
     multiple_select: Annotated[
         str,
@@ -106,22 +108,34 @@ def csv(
             case_sensitive=False,
         ),
     ] = "summary",
-):
+) -> None:
     """Export data as CSV."""
     _, base_url = get_credentials()
+    if base_url is None:
+        raise ValueError("Base URL is missing. Please provide valid credentials.")
     if not asset_id or not download_path:
-        saved_asset_id, _, saved_download_path = (
-            get_asset_id_and_xlsxform_path()
-        )
+        saved_asset_id, _, saved_download_path = get_asset_id_and_xlsxform_path()
         if not asset_id:
-            if not saved_asset_id:
-                raise typer.BadParameter(
-                    "Error: Missing option '--asset-id'. Provide it as an option or ensure it's saved."
-                )
             asset_id = saved_asset_id
         if not download_path:
-            download_path = saved_download_path or os.getcwd()
-    if not os.path.exists(download_path):
+            download_path = Path(saved_download_path) if saved_download_path else None
+
+    if not asset_id:
+        raise typer.BadParameter(
+            "Error: Missing option '--asset-id'."
+            "Provide it as an option or ensure it's saved."
+        )
+    if not download_path:
+        use_cwd = Confirm.ask(
+            "No download path specified. Do you want to use the current directory?"
+        )
+        if use_cwd:
+            download_path = Path.cwd()
+        else:
+            print("Download path not specified. Exiting.")
+            return
+    download_path = Path(download_path).resolve()
+    if not download_path.exists():
         print(
             f"Error: No such directory: {download_path}. "
             "Please check the path and try again."
@@ -153,14 +167,17 @@ def csv(
 def xls(
     output_name: Annotated[str, typer.Option(help="Output file name.")],
     asset_id: Annotated[
-        str,
+        Optional[str],
         typer.Option(
             "--asset-id",
-            help="The asset ID of the asset to export data. Provide this or ensure it is saved.",
+            help=(
+                "The asset ID of the asset to export data. "
+                "Provide this or ensure it is saved."
+            ),
         ),
     ] = None,
     download_path: Annotated[
-        Optional[str],
+        Optional[Path],
         typer.Option(help="Download path. Defaults to the current directory."),
     ] = None,
     separator: Annotated[
@@ -169,15 +186,11 @@ def xls(
     ] = "/",
     current_version: Annotated[
         bool,
-        typer.Option(
-            "-c", "--current-version", help="Include data from all versions."
-        ),
+        typer.Option("-c", "--current-version", help="Include data from all versions."),
     ] = True,
     gheaders: Annotated[
         bool,
-        typer.Option(
-            "-gh", "--gheaders", help="Include group headers in the export."
-        ),
+        typer.Option("-gh", "--gheaders", help="Include group headers in the export."),
     ] = False,
     language: Annotated[
         str,
@@ -189,15 +202,11 @@ def xls(
     ] = "_default",
     no_media_url: Annotated[
         bool,
-        typer.Option(
-            "-nmu", "--no-media-url", help="Include media URL in the export."
-        ),
+        typer.Option("-nmu", "--no-media-url", help="Include media URL in the export."),
     ] = True,
     xtext: Annotated[
         bool,
-        typer.Option(
-            "-xt", "--xtext", help="Store data and number response as text."
-        ),
+        typer.Option("-xt", "--xtext", help="Store data and number response as text."),
     ] = False,
     multiple_select: Annotated[
         str,
@@ -208,22 +217,34 @@ def xls(
             case_sensitive=False,
         ),
     ] = "summary",
-):
+) -> None:
     """Export data as XLS."""
     _, base_url = get_credentials()
+    if base_url is None:
+        raise ValueError("Base URL is missing. Please provide valid credentials.")
     if not asset_id or not download_path:
-        saved_asset_id, _, saved_download_path = (
-            get_asset_id_and_xlsxform_path()
-        )
+        saved_asset_id, _, saved_download_path = get_asset_id_and_xlsxform_path()
         if not asset_id:
-            if not saved_asset_id:
-                raise typer.BadParameter(
-                    "Error: Missing option '--asset-id'. Provide it as an option or ensure it's saved."
-                )
             asset_id = saved_asset_id
         if not download_path:
-            download_path = saved_download_path or os.getcwd()
-    if not os.path.exists(download_path):
+            download_path = Path(saved_download_path) if saved_download_path else None
+
+    if not asset_id:
+        raise typer.BadParameter(
+            "Error: Missing option '--asset-id'."
+            "Provide it as an option or ensure it's saved."
+        )
+    if not download_path:
+        use_cwd = Confirm.ask(
+            "No download path specified. Do you want to use the current directory?"
+        )
+        if use_cwd:
+            download_path = Path.cwd()
+        else:
+            print("Download path not specified. Exiting.")
+            return
+    download_path = Path(download_path).resolve()
+    if not download_path.exists():
         print(
             f"Error: No such directory: {download_path}. "
             "Please check the path and try again."

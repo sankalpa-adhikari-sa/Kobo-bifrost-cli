@@ -1,27 +1,6 @@
-import pytest
-from typer.testing import CliRunner
+from unittest.mock import MagicMock, patch
+
 from bifrost_cli.commands.delete import app as delete
-from unittest.mock import patch, MagicMock
-
-
-@pytest.fixture
-def runner():
-    return CliRunner()
-
-
-@pytest.fixture(autouse=True)
-def mock_keyring():
-    with patch("keyring.get_password") as mock_get_password, patch(
-        "keyring.set_password"
-    ) as mock_set_password:
-        mock_get_password.return_value = "test-value"
-        yield {
-            "get_password": mock_get_password,
-            "set_password": mock_set_password,
-        }
-
-
-SERVICE_NAME = "kobo-bifrost"
 
 
 def test_delete_abort(runner, mock_keyring):
@@ -36,9 +15,9 @@ def test_delete_abort(runner, mock_keyring):
     )
 
     assert result.exit_code == 1
-    assert "Do you want to delete the project?" in result.output
-    assert "Aborting project Deletion." in result.output
-    assert "Aborted." in result.output
+    assert "Do you want to delete the project?" in result.stdout
+    assert "Aborting project Deletion." in result.stdout
+    assert "Aborted." in result.stdout
 
 
 @patch("bifrost_cli.commands.delete._make_request")
@@ -55,8 +34,8 @@ def test_delete_fail(mock_make_request, runner, mock_keyring):
     )
 
     assert result.exit_code == 0
-    assert "Do you want to delete the project?" in result.output
-    assert "💥 Failed to Delete Form" in result.output
+    assert "Do you want to delete the project?" in result.stdout
+    assert "💥 Failed to Delete Form" in result.stdout
 
 
 @patch("bifrost_cli.commands.delete._make_request")
@@ -76,5 +55,5 @@ def test_delete_success(mock_make_request, runner, mock_keyring):
     )
 
     assert result.exit_code == 0
-    assert "Do you want to delete the project?" in result.output
-    assert "✅ Succssfully Deleted Form" in result.output
+    assert "Do you want to delete the project?" in result.stdout
+    assert "✅ Succssfully Deleted Form" in result.stdout

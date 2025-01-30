@@ -1,8 +1,11 @@
+from typing import Optional
+
 import typer
 from rich.console import Console
-from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn
-from ..utils import get_credentials, _make_request
+from rich.table import Table
+
+from bifrost_cli.utils import _make_request, get_credentials
 
 app = typer.Typer()
 
@@ -12,9 +15,13 @@ def list_assets() -> None:
     """Lists all assets(forms) with basic information."""
     console = Console()
     _, base_url = get_credentials()
+    if base_url is None:
+        raise ValueError("Base URL is missing. Please provide valid credentials.")
     asset_url = f"{base_url}assets/"
 
-    def determine_modification_status(deployed_version_id, version_id):
+    def determine_modification_status(
+        deployed_version_id: Optional[str], version_id: str
+    ) -> str:
         if deployed_version_id is None:
             return "-"
         return "No" if version_id == deployed_version_id else "Yes"
@@ -24,9 +31,7 @@ def list_assets() -> None:
         TextColumn("[progress.description]{task.description}"),
         transient=True,
     ) as progress:
-        task = progress.add_task(
-            description="Fetching asset data...", start=False
-        )
+        task = progress.add_task(description="Fetching asset data...", start=False)
 
         progress.start_task(task)
         response = _make_request("GET", asset_url, params={"format": "json"})

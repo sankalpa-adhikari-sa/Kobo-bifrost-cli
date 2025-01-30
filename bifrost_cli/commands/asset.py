@@ -1,21 +1,23 @@
+import os
+from pathlib import Path
 from typing import Optional
-from typing_extensions import Annotated
+
 import typer
+from rich import print
 from rich.progress import Progress, SpinnerColumn, TextColumn
-from ..utils import (
-    get_credentials,
+from rich.prompt import Confirm
+from typing_extensions import Annotated
+
+from bifrost_cli.utils import (
     _make_request,
     get_asset_id_and_xlsxform_path,
+    get_credentials,
 )
-from rich import print
-import os
 
 app = typer.Typer()
 
 
-def get_asset(
-    base_url: str, asset_id: str, file_path: str, asset_type: str
-) -> None:
+def get_asset(base_url: str, asset_id: str, file_path: str, asset_type: str) -> None:
     """
     Downloads an asset from a specified URL and saves it to a file.
 
@@ -33,9 +35,7 @@ def get_asset(
         TextColumn("[progress.description]{task.description}"),
         transient=True,
     ) as progress:
-        task = progress.add_task(
-            description="Fetching asset data...", start=False
-        )
+        task = progress.add_task(description="Fetching asset data...", start=False)
 
         progress.start_task(task)
         response = _make_request(
@@ -53,14 +53,17 @@ def get_asset(
 @app.command("xls")
 def asset_xls(
     asset_id: Annotated[
-        str,
+        Optional[str],
         typer.Option(
             "--asset-id",
-            help="The asset ID of the asset to download. Provide this or ensure it is saved.",
+            help=(
+                "The asset ID of the asset to download."
+                "Provide this or ensure it is saved."
+            ),
         ),
     ] = None,
     download_path: Annotated[
-        Optional[str],
+        Optional[Path],
         typer.Option(help="Download path. Defaults to the current directory."),
     ] = None,
 ) -> None:
@@ -68,25 +71,38 @@ def asset_xls(
 
     Args:
         asset_id (str): The asset UID of the Project form.
-        download_path (Optional[str]): The local directory path to save the downloaded asset. Defaults to the current directory.
+        download_path (Optional[Path]):
+            The local directory path to save the downloaded asset.
+            Defaults to the current directory.
 
     """
     _, base_url = get_credentials()
+    if base_url is None:
+        raise ValueError("Base URL is missing. Please provide valid credentials.")
 
     if not asset_id or not download_path:
-        saved_asset_id, _, saved_download_path = (
-            get_asset_id_and_xlsxform_path()
-        )
+        saved_asset_id, _, saved_download_path = get_asset_id_and_xlsxform_path()
         if not asset_id:
-            if not saved_asset_id:
-                raise typer.BadParameter(
-                    "Error: Missing option '--asset-id'. Provide it as an option or ensure it's saved."
-                )
             asset_id = saved_asset_id
         if not download_path:
-            download_path = saved_download_path or os.getcwd()
+            download_path = Path(saved_download_path) if saved_download_path else None
 
-    if not os.path.exists(download_path):
+    if not asset_id:
+        raise typer.BadParameter(
+            "Error: Missing option '--asset-id'."
+            "Provide it as an option or ensure it's saved."
+        )
+    if not download_path:
+        use_cwd = Confirm.ask(
+            "No download path specified. Do you want to use the current directory?"
+        )
+        if use_cwd:
+            download_path = Path.cwd()
+        else:
+            print("Download path not specified. Exiting.")
+            return
+    download_path = Path(download_path).resolve()
+    if not download_path.exists():
         print(
             f"Error: No such directory: {download_path}. "
             "Please check the path and try again."
@@ -104,14 +120,17 @@ def asset_xls(
 @app.command("xml")
 def asset_xml(
     asset_id: Annotated[
-        str,
+        Optional[str],
         typer.Option(
             "--asset-id",
-            help="The asset ID of the asset to download. Provide this or ensure it is saved.",
+            help=(
+                "The asset ID of the asset to download."
+                "Provide this or ensure it is saved."
+            ),
         ),
     ] = None,
     download_path: Annotated[
-        Optional[str],
+        Optional[Path],
         typer.Option(help="Download path. Defaults to the current directory."),
     ] = None,
 ) -> None:
@@ -120,22 +139,37 @@ def asset_xml(
 
     Args:
         asset_id (str): The asset UID of the Project form.
-        download_path (Optional[str]): The local path to save the downloaded asset. Defaults to the current directory.
+        download_path (Optional[Path]):
+            The local path to save the downloaded asset.
+            Defaults to the current directory.
     """
     _, base_url = get_credentials()
+    if base_url is None:
+        raise ValueError("Base URL is missing. Please provide valid credentials.")
+
     if not asset_id or not download_path:
-        saved_asset_id, _, saved_download_path = (
-            get_asset_id_and_xlsxform_path()
-        )
+        saved_asset_id, _, saved_download_path = get_asset_id_and_xlsxform_path()
         if not asset_id:
-            if not saved_asset_id:
-                raise typer.BadParameter(
-                    "Error: Missing option '--asset-id'. Provide it as an option or ensure it's saved."
-                )
             asset_id = saved_asset_id
         if not download_path:
-            download_path = saved_download_path or os.getcwd()
-    if not os.path.exists(download_path):
+            download_path = Path(saved_download_path) if saved_download_path else None
+
+    if not asset_id:
+        raise typer.BadParameter(
+            "Error: Missing option '--asset-id'."
+            "Provide it as an option or ensure it's saved."
+        )
+    if not download_path:
+        use_cwd = Confirm.ask(
+            "No download path specified. Do you want to use the current directory?"
+        )
+        if use_cwd:
+            download_path = Path.cwd()
+        else:
+            print("Download path not specified. Exiting.")
+            return
+    download_path = Path(download_path).resolve()
+    if not download_path.exists():
         print(
             f"Error: No such directory: {download_path}. "
             "Please check the path and try again."

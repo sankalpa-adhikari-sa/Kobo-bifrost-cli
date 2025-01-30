@@ -1,148 +1,6 @@
-import pytest
-from typer.testing import CliRunner
+from unittest.mock import MagicMock, patch
+
 from bifrost_cli.commands.update import app as update_app
-from unittest.mock import patch, MagicMock
-
-
-@pytest.fixture
-def runner():
-    return CliRunner()
-
-
-@pytest.fixture
-def isolated_filesystem(runner):
-    with runner.isolated_filesystem() as fs:
-        yield fs
-
-
-@pytest.fixture(autouse=True)
-def mock_keyring():
-    with patch("keyring.get_password") as mock_get_password, patch(
-        "keyring.set_password"
-    ) as mock_set_password:
-        mock_get_password.return_value = "test-value"
-        yield {
-            "get_password": mock_get_password,
-            "set_password": mock_set_password,
-        }
-
-
-SERVICE_NAME = "kobo-bifrost"
-
-
-@pytest.fixture
-def mock_response():
-    return {
-        "messages": {
-            "updated": [
-                {
-                    "uid": "aLzhec9AxLAVwXqsb6wq9g",
-                    "kind": "asset",
-                    "summary": {
-                        "geo": True,
-                        "labels": [
-                            "Question 1",
-                            "Question 2",
-                            "Question 3",
-                            "Question 4",
-                            "Question 5",
-                        ],
-                        "columns": [
-                            "type",
-                            "name",
-                            "label",
-                            "hint",
-                            "required",
-                            "appearance",
-                            "select_from_list_name",
-                            "calculation",
-                            "trigger",
-                            "read_only",
-                            "choice_filter",
-                            "constraint",
-                            "constraint_message",
-                            "relevant",
-                            "repeat_count",
-                            "parameters",
-                        ],
-                        "lock_all": False,
-                        "lock_any": False,
-                        "languages": [],
-                        "row_count": 682,
-                        "name_quality": {
-                            "ok": 1,
-                            "bad": 0,
-                            "good": 681,
-                            "total": 682,
-                            "firsts": {
-                                "ok": {
-                                    "name": "Suggestion_for_improvement",
-                                    "index": 673,
-                                    "label": ["Suggestion for improvement"],
-                                }
-                            },
-                        },
-                        "default_translation": None,
-                    },
-                    "owner__username": "some_user",
-                }
-            ]
-        }
-    }
-
-
-@pytest.fixture
-def mock_deploy_response():
-    return {
-        "asset": {
-            "deployment_status": "deployed",
-            "deployment__links": {
-                "url": "https://",
-                "single_url": "",
-                "single_once_url": "https://",
-                "offline_url": "https://",
-                "preview_url": "https://",
-                "iframe_url": "https://",
-                "single_iframe_url": "https://",
-                "single_once_iframe_url": "https://",
-            },
-        }
-    }
-
-
-@pytest.fixture
-def mock_view_asset_snapshot_response():
-    return {
-        "enketopreviewlink": "https://eu.kobotoolbox.org/api/v2/asset_snapshots/snapshot_id/preview",
-        "source": {"settings": {"form_title": "new"}},
-    }
-
-
-@pytest.fixture
-def mock_redeploy_response():
-    return {
-        "asset": {
-            "version_count": "",
-            "deployed_version_id": "",
-            "deployment__submission_count": "",
-            "deployment_status": "deployed",
-            "deployment__links": {
-                "url": "https://",
-                "single_url": "",
-                "single_once_url": "https://",
-                "offline_url": "https://",
-                "preview_url": "https://",
-                "iframe_url": "https://",
-                "single_iframe_url": "https://",
-                "single_once_iframe_url": "https://",
-            },
-        }
-    }
-
-
-@pytest.fixture
-def mock_version_id():
-    return {"version_id": "valid_version_id"}
 
 
 @patch("bifrost_cli.commands.update._import_form")
@@ -152,14 +10,14 @@ def test_update_success(
     mock_import_form,
     runner,
     mock_keyring,
-    mock_response,
-):
+    mock_import_update_response,
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
     }.get
 
-    mock_import_form.return_value = mock_response
+    mock_import_form.return_value = mock_import_update_response
     mock_update_asset_info.return_value = None
     result = runner.invoke(
         update_app,
@@ -171,14 +29,14 @@ def test_update_success(
         ],
     )
     assert result.exit_code == 0
-    assert "✅ Successfully updated form" in result.output
+    assert "✅ Successfully updated form" in result.stdout
 
 
 @patch("bifrost_cli.commands.update._import_form")
 @patch("bifrost_cli.commands.update.update_asset_info")
 def test_update_failure(
     mock_update_asset_info, mock_import_form, runner, mock_keyring
-):
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
@@ -197,10 +55,10 @@ def test_update_failure(
     )
 
     assert result.exit_code == 0
-    assert "❌ Failed to update form." in result.output
+    assert "❌ Failed to update form." in result.stdout
 
 
-def test_update_with_deploy_and_redeploy(runner):
+def test_update_with_deploy_and_redeploy(runner) -> None:
     """Test that providing both --deploy and --redeploy raises an error."""
     result = runner.invoke(
         update_app,
@@ -216,7 +74,7 @@ def test_update_with_deploy_and_redeploy(runner):
 
     assert result.exit_code != 0
 
-    assert "Error: You cannot specify both " in result.output.replace("\n", "")
+    assert "Error: You cannot specify both " in result.stdout.replace("\n", "")
 
 
 @patch("bifrost_cli.commands.deploy._make_request")
@@ -228,9 +86,9 @@ def test_update_deploy_success(
     mock_make_request,
     runner,
     mock_keyring,
-    mock_response,
+    mock_import_update_response,
     mock_deploy_response,
-):
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
@@ -241,7 +99,7 @@ def test_update_deploy_success(
     mock_response_deploy.json.return_value = mock_deploy_response
     mock_make_request.return_value = mock_response_deploy
 
-    mock_import_form.return_value = mock_response
+    mock_import_form.return_value = mock_import_update_response
     mock_update_asset_info.return_value = None
     result = runner.invoke(
         update_app,
@@ -255,8 +113,8 @@ def test_update_deploy_success(
     )
 
     assert result.exit_code == 0
-    assert "✅ Successfully updated form" in result.output
-    assert "✅ Successfully Deployed form" in result.output
+    assert "✅ Successfully updated form" in result.stdout
+    assert "✅ Successfully Deployed form" in result.stdout
 
 
 @patch("bifrost_cli.commands.deploy._make_request")
@@ -268,8 +126,8 @@ def test_update_deploy_failure(
     mock_make_request,
     runner,
     mock_keyring,
-    mock_response,
-):
+    mock_import_update_response,
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
@@ -279,7 +137,7 @@ def test_update_deploy_failure(
     mock_response_deploy.status_code = 404
     mock_make_request.return_value = mock_response_deploy
 
-    mock_import_form.return_value = mock_response
+    mock_import_form.return_value = mock_import_update_response
     mock_update_asset_info.return_value = None
     result = runner.invoke(
         update_app,
@@ -293,8 +151,12 @@ def test_update_deploy_failure(
     )
 
     assert result.exit_code == 0
-    assert "✅ Successfully updated form" in result.output
-    assert "Something went wrong!" in result.output
+    assert "✅ Successfully updated form" in result.stdout
+    assert (
+        "Error: The form you are trying to deploy may not exist or "
+        "The form cannot be deployed as it may already be deployed."
+        in result.stdout.replace("\n", "")
+    )
 
 
 @patch("bifrost_cli.commands.deploy._make_request")
@@ -306,8 +168,8 @@ def test_update_deploy_failure_already_deployed(
     mock_make_request,
     runner,
     mock_keyring,
-    mock_response,
-):
+    mock_import_update_response,
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
@@ -315,7 +177,10 @@ def test_update_deploy_failure_already_deployed(
 
     mock_make_request.return_value = None
 
-    mock_import_form.return_value = mock_response
+    mock_import_form.return_value = mock_import_update_response
+    mock_response_deploy = MagicMock()
+    mock_response_deploy.status_code = 405
+    mock_make_request.return_value = mock_response_deploy
     mock_update_asset_info.return_value = None
     result = runner.invoke(
         update_app,
@@ -329,11 +194,11 @@ def test_update_deploy_failure_already_deployed(
     )
 
     assert result.exit_code == 0
-    assert "✅ Successfully updated form" in result.output
+    assert "✅ Successfully updated form" in result.stdout
     assert (
-        "\nError: The form you are trying to deploy may not exist or \n"
+        "Error: The form you are trying to deploy may not exist or "
         "The form cannot be deployed as it may already be deployed."
-        in result.stdout
+        in result.stdout.replace("\n", "")
     )
 
 
@@ -346,10 +211,10 @@ def test_update_redeploy_success(
     mock_make_request,
     runner,
     mock_keyring,
-    mock_response,
+    mock_import_update_response,
     mock_redeploy_response,
     mock_version_id,
-):
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
@@ -368,7 +233,7 @@ def test_update_redeploy_success(
         mock_response_deploy2,
     ]
 
-    mock_import_form.return_value = mock_response
+    mock_import_form.return_value = mock_import_update_response
     mock_update_asset_info.return_value = None
     result = runner.invoke(
         update_app,
@@ -382,8 +247,8 @@ def test_update_redeploy_success(
     )
 
     assert result.exit_code == 0
-    assert "✅ Successfully updated form" in result.output
-    assert "✅ Successfully Re-deployed form" in result.output
+    assert "✅ Successfully updated form" in result.stdout
+    assert "✅ Successfully Re-deployed form" in result.stdout
 
 
 @patch("bifrost_cli.commands.redeploy._make_request")
@@ -395,9 +260,9 @@ def test_update_redeploy_not_deployed(
     mock_make_request,
     runner,
     mock_keyring,
-    mock_response,
+    mock_import_update_response,
     mock_version_id,
-):
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
@@ -406,13 +271,15 @@ def test_update_redeploy_not_deployed(
     mock_response_deploy1 = MagicMock()
     mock_response_deploy1.status_code = 200
     mock_response_deploy1.json.return_value = mock_version_id
+    mock_response_deploy2 = MagicMock()
+    mock_response_deploy2.status_code = 405
 
     mock_make_request.side_effect = [
         mock_response_deploy1,
-        None,
+        mock_response_deploy2,
     ]
 
-    mock_import_form.return_value = mock_response
+    mock_import_form.return_value = mock_import_update_response
     mock_update_asset_info.return_value = None
     result = runner.invoke(
         update_app,
@@ -426,10 +293,10 @@ def test_update_redeploy_not_deployed(
     )
 
     assert result.exit_code == 0
-    assert "✅ Successfully updated form" in result.output
+    assert "✅ Successfully updated form" in result.stdout
     assert (
         "Error: The form cannot be redeployed.\nPlease check the deployment status of the form"
-        in result.output
+        in result.stdout
     )
 
 
@@ -442,17 +309,22 @@ def test_update_redeploy_form_not_exist(
     mock_make_request,
     runner,
     mock_keyring,
-    mock_response,
+    mock_import_update_response,
     mock_version_id,
-):
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
     }.get
 
-    mock_make_request.return_value = None
+    mock_response = MagicMock()
+    mock_response.status_code = 404
+    mock_response.json.return_value = {
+        "detail": "TThe form you are trying to redeploy may not exist."
+    }
+    mock_make_request.sideeffect = mock_response
 
-    mock_import_form.return_value = mock_response
+    mock_import_form.return_value = mock_import_update_response
     mock_update_asset_info.return_value = None
     result = runner.invoke(
         update_app,
@@ -466,11 +338,8 @@ def test_update_redeploy_form_not_exist(
     )
 
     assert result.exit_code == 0
-    assert "✅ Successfully updated form" in result.output
-    assert (
-        "Error: The form you are trying to redeploy may not exist."
-        in result.output
-    )
+    assert "✅ Successfully updated form" in result.stdout
+    assert "Error: The form you are trying to redeploy may not exist." in result.stdout
 
 
 @patch("bifrost_cli.commands.view._make_request")
@@ -482,9 +351,9 @@ def test_update_preview_success(
     mock_make_request,
     runner,
     mock_keyring,
-    mock_response,
+    mock_import_update_response,
     mock_view_asset_snapshot_response,
-):
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
@@ -495,7 +364,7 @@ def test_update_preview_success(
     mock_response_preview.json.return_value = mock_view_asset_snapshot_response
     mock_make_request.return_value = mock_response_preview
 
-    mock_import_form.return_value = mock_response
+    mock_import_form.return_value = mock_import_update_response
     mock_update_asset_info.return_value = None
     result = runner.invoke(
         update_app,
@@ -509,8 +378,8 @@ def test_update_preview_success(
     )
 
     assert result.exit_code == 0
-    assert "✅ Successfully updated form" in result.output
-    assert "✅ Successfully fetched asset snaphsots" in result.output
+    assert "✅ Successfully updated form" in result.stdout
+    assert "✅ Successfully fetched asset snaphsots" in result.stdout
 
 
 @patch("bifrost_cli.commands.view._make_request")
@@ -522,9 +391,9 @@ def test_update_asset_snapshot_invalid_asset_id(
     mock_make_request,
     runner,
     mock_keyring,
-    mock_response,
+    mock_import_update_response,
     mock_view_asset_snapshot_response,
-):
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
@@ -532,7 +401,7 @@ def test_update_asset_snapshot_invalid_asset_id(
 
     mock_make_request.return_value = None
 
-    mock_import_form.return_value = mock_response
+    mock_import_form.return_value = mock_import_update_response
     mock_update_asset_info.return_value = None
     result = runner.invoke(
         update_app,
@@ -546,5 +415,5 @@ def test_update_asset_snapshot_invalid_asset_id(
     )
 
     assert result.exit_code == 0
-    assert "✅ Successfully updated form" in result.output
-    assert "❌ Failed to fetch asset snapshot." in result.output
+    assert "✅ Successfully updated form" in result.stdout
+    assert "❌ Failed to fetch asset snapshot." in result.stdout

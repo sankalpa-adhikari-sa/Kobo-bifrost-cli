@@ -1,22 +1,22 @@
-from typing_extensions import Annotated
 import typer
+from rich import print
 from rich.console import Console
-from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn
-from ..utils import (
-    get_credentials,
+from rich.table import Table
+from typing_extensions import Annotated, Optional
+
+from bifrost_cli.utils import (
     _make_request,
     get_asset_id_and_xlsxform_path,
+    get_credentials,
 )
-from rich import print
-
 
 app = typer.Typer()
 
 
 def redeploy_form(asset_id: str, base_url: str) -> None:
     """
-    Redoplys the asset(form).
+    Redeploy the asset(form).
     Args:
         base_url (str): The base URL of the API.
         asset_id (str): The ID of the form.
@@ -34,12 +34,10 @@ def redeploy_form(asset_id: str, base_url: str) -> None:
         )
 
         progress.start_task(task)
-        response = _make_request(
-            "GET", form_asset_url, params={"format": "json"}
-        )
+        response = _make_request("GET", form_asset_url, params={"format": "json"})
         progress.update(task, completed=100)
 
-    if response is None:
+    if response.status_code != 200:
         print("Error: The form you are trying to redeploy may not exist.")
         return
     version_to_deploy = response.json()["version_id"]
@@ -52,65 +50,64 @@ def redeploy_form(asset_id: str, base_url: str) -> None:
         data=deployment_data,
         params={"format": "json"},
     )
-    if response is not None:
-        if response.status_code == 200:
-            print("✅ Successfully Re-deployed form")
-            res = response.json()
 
-            table = Table(title="Re-deployment Details")
-            table.add_column("SN", justify="right", overflow="fold")
-            table.add_column("Asset ID", justify="right", overflow="fold")
-            table.add_column(
-                "Deployment Status", justify="right", overflow="fold"
-            )
-            table.add_column("v.SN", justify="right", overflow="fold")
-            table.add_column("v.ID", justify="right", overflow="fold")
-            table.add_column(
-                "Deployment Link", justify="right", overflow="fold"
-            )
-            table.add_column(
-                "Submission Count", justify="right", overflow="fold"
-            )
-            table.add_row(
-                "1",
-                asset_id,
-                res["asset"]["deployment_status"],
-                f"{res['asset']['version_count']}",
-                res["asset"]["deployed_version_id"],
-                res["asset"]["deployment__links"]["url"],
-                f"{res['asset']['deployment__submission_count']}",
-            )
+    if response.status_code == 200:
+        print("✅ Successfully Re-deployed form")
+        res = response.json()
 
-            console.print(table)
-        else:
-            print("Something went wrong!")
-    else:
-        print(
-            "Error: The form cannot be redeployed.\n"
-            "Please check the deployment status of the form "
-            "and ensure it is deployed before attempting to redeploy."
+        table = Table(title="Re-deployment Details")
+        table.add_column("SN", justify="right", overflow="fold")
+        table.add_column("Asset ID", justify="right", overflow="fold")
+        table.add_column("Deployment Status", justify="right", overflow="fold")
+        table.add_column("v.SN", justify="right", overflow="fold")
+        table.add_column("v.ID", justify="right", overflow="fold")
+        table.add_column("Deployment Link", justify="right", overflow="fold")
+        table.add_column("Submission Count", justify="right", overflow="fold")
+        table.add_row(
+            "1",
+            asset_id,
+            res["asset"]["deployment_status"],
+            f"{res['asset']['version_count']}",
+            res["asset"]["deployed_version_id"],
+            res["asset"]["deployment__links"]["url"],
+            f"{res['asset']['deployment__submission_count']}",
         )
+
+        console.print(table)
+    elif response.status_code == 405:
+        print("Error: The form cannot be redeployed.")
+        print(
+            "Please check the deployment status of the form and ensure it is deployed before attempting to redeploy."
+        )
+    else:
+        print("Something went wrong!")
 
 
 @app.command()
 def redeploy(
     asset_id: Annotated[
-        str,
+        Optional[str],
         typer.Option(
             "--asset-id",
-            help="The asset ID of the form to update. Provide this or ensure it is saved.",
+            help=(
+                "The asset ID of the form to update."
+                " Provide this or ensure it is saved."
+            ),
         ),
     ] = None,
-):
+) -> None:
     """
     Redeploys a specified asset(form).
     """
     _, base_url = get_credentials()
+    if base_url is None:
+        raise ValueError("Base URL is missing. Please provide valid credentials.")
     if not asset_id:
         asset_id, _, _ = get_asset_id_and_xlsxform_path()
         if not asset_id:
             raise typer.BadParameter(
-                "Missing argument 'ASSET_ID'. Provide it as an argument or ensure it's saved."
+                "Missing argument 'ASSET_ID'."
+                " Provide it as an argument or ensure it's saved."
             )
     redeploy_form(asset_id, base_url)
 

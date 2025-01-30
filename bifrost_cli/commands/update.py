@@ -1,16 +1,19 @@
-from typing_extensions import Annotated
+from pathlib import Path
+
 import typer
-from rich.progress import Progress, SpinnerColumn, TextColumn
-from ..utils import (
-    get_credentials,
-    _import_form,
-    get_asset_id_and_xlsxform_path,
-    update_asset_info,
-)
 from rich import print
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from typing_extensions import Annotated, Optional, cast
+
 from bifrost_cli.commands.deploy import deploy_form
 from bifrost_cli.commands.redeploy import redeploy_form
 from bifrost_cli.commands.view import view_asset_snapshot
+from bifrost_cli.utils import (
+    _import_form,
+    get_asset_id_and_xlsxform_path,
+    get_credentials,
+    update_asset_info,
+)
 
 app = typer.Typer()
 
@@ -18,8 +21,8 @@ app = typer.Typer()
 def update_form(
     asset_id: str,
     base_url: str,
-    file_path: str,
-) -> None:
+    file_path: Path,
+) -> Optional[str]:
     """
     Updates and asset(form).
 
@@ -49,12 +52,11 @@ def update_form(
         progress.update(task, completed=100)
 
     if response is not None:
-
         print(
             "✅ Successfully updated form "
             f"{response['messages']['updated'][0]['uid']}"
         )
-        return response["messages"]["updated"][0]["uid"]
+        return cast(str, response["messages"]["updated"][0]["uid"])
     else:
         print("❌ Failed to update form.")
         return None
@@ -63,30 +65,32 @@ def update_form(
 @app.command()
 def update(
     asset_id: Annotated[
-        str,
+        Optional[str],
         typer.Option(
             "--asset-id",
-            help="The asset ID of the form to update. Provide this or ensure it is saved.",
+            help=(
+                "The asset ID of the form to update."
+                " Provide this or ensure it is saved."
+            ),
         ),
     ] = None,
     filepath: Annotated[
-        str,
+        Optional[Path],
         typer.Option(
             "--filepath",
-            help="The path to the XLSForm file to update. Provide this or ensure it is saved.",
+            help=(
+                "The path to the XLSForm file to update."
+                " Provide this or ensure it is saved."
+            ),
         ),
     ] = None,
     deploy: Annotated[
         bool,
-        typer.Option(
-            "-d", "--deploy", help="Deploy the project after creation."
-        ),
+        typer.Option("-d", "--deploy", help="Deploy the project after creation."),
     ] = False,
     redeploy: Annotated[
         bool,
-        typer.Option(
-            "-rd", "--redeploy", help="Redeploy the project after creation."
-        ),
+        typer.Option("-rd", "--redeploy", help="Redeploy the project after creation."),
     ] = False,
     preview_snapshots: Annotated[
         bool,
@@ -96,31 +100,34 @@ def update(
             help="Preview snapshot of the updated asset.",
         ),
     ] = False,
-):
+) -> None:
     """Updates a specified existing asset(form)."""
     if deploy and redeploy:
         raise typer.BadParameter(
             "Error: You cannot specify both '--deploy, -d' and '--redeploy, -rd' options at the same time."
         )
     _, base_url = get_credentials()
+    if base_url is None:
+        raise ValueError("Base URL is missing. Please provide valid credentials.")
     if not asset_id or not filepath:
         saved_asset_id, saved_filepath, _ = get_asset_id_and_xlsxform_path()
         if not asset_id:
-            if not saved_asset_id:
-                raise typer.BadParameter(
-                    "Error: Missing option '--asset-id'. Provide it as an option or ensure it's saved."
-                )
-            asset_id = saved_asset_id
+            asset_id = asset_id or saved_asset_id
         if not filepath:
-            if not saved_filepath:
-                raise typer.BadParameter(
-                    "Error: Missing option '--filepath'. Provide it as an option or ensure it's saved."
-                )
-            filepath = saved_filepath
+            filepath = Path(saved_filepath) if saved_filepath else None
 
-    res_uid = update_form(
-        asset_id=asset_id, file_path=filepath, base_url=base_url
-    )
+    if not asset_id:
+        raise typer.BadParameter(
+            "Error: Missing option '--asset-id'. Provide it as an option or ensure it's saved."
+        )
+    if not filepath:
+        raise typer.BadParameter(
+            "Error: Missing option '--filepath'. Provide it as an option or ensure it's saved."
+        )
+    # if isinstance(filepath, str):
+    #     filepath = Path(filepath)
+
+    res_uid = update_form(asset_id=asset_id, file_path=filepath, base_url=base_url)
     update_asset_info(asset_id=asset_id, xlsx_path=filepath)
 
     if res_uid is not None:

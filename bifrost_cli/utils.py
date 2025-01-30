@@ -1,16 +1,16 @@
-import requests
-import keyring
-from rich import print
-import typer
-from typing import Optional, Union
 import time
-import os
 from pathlib import Path
+from typing import Any, Dict, Optional, Tuple, cast
+
+import keyring
+import requests
+import typer
+from rich import print
 
 SERVICE_NAME = "kobo-bifrost"
 
 
-def get_credentials():
+def get_credentials() -> Tuple[Optional[str], Optional[str]]:
     """Retrieve credentials from the keyring."""
     api_key = keyring.get_password(SERVICE_NAME, "api_key")
     api_url = keyring.get_password(SERVICE_NAME, "api_url")
@@ -26,52 +26,75 @@ def get_credentials():
         raise typer.Abort()
 
 
-def _make_request(method: str, url: str, **kwargs) -> requests.Response:
+def _make_request(method: str, url: str, **kwargs: Any) -> requests.Response:
     api_key, _ = get_credentials()
-    api_key = api_key
     headers = {"Authorization": f"Token {api_key}"}
     try:
-        response = requests.request(
-            method=method, url=url, headers=headers, **kwargs
-        )
-        response.raise_for_status()
+        response = requests.request(method=method, url=url, headers=headers, **kwargs)
+
         return response
     except requests.RequestException as e:
         print(f"Error during making {method} request: {e}")
+        raise
 
 
-def _check_status(url: str) -> dict:
-    return _make_request("GET", url=url).json()
+def _check_status(url: str) -> Optional[Dict[str, Any]]:
+    response = _make_request("GET", url=url)
+    if response:
+        return cast(Dict[str, Any], response.json())
+    else:
+        raise ValueError(f"Failed to retrieve a valid response from {url}")
 
 
-def _wait_for_completion(url: str) -> Union[None, dict]:
+def _wait_for_completion(url: str, timeout: Optional[int] = 180) -> Optional[Dict]:
     """
     Wait for a process to complete by polling a given URL.
 
     Args:
         url (str): The URL to poll for status updates.
+        timeout (Optional[int]): The maximum time (in seconds) to wait for completion. Defaults to 300 seconds.
 
     Returns:
-        Union[None, Dict]: The final status response if completed,
-        or None if an error occurs.
+        Optional[Dict]: The final status response if completed,
+        or None if an error occurs or timeout is reached.
     """
+    start_time = time.time()
+
     while True:
-        status_response = _check_status(url)
+        try:
+            # Call to the function that checks the status
+            status_response = _check_status(url)
+            if status_response is None:
+                print("❌ Error: Received None as status response.")
+                return None
+        except Exception:
+            print("❌ Error checking status.")
+            return None
+
+        if "status" not in status_response:
+            print("❌ Invalid response format. Missing 'status' field.")
+            return None
+
         if status_response["status"] == "processing":
-            print(
-                "Status: still processing. Checking again in a few seconds..."
-            )
+            print("⏳ Status: still processing. Checking again in 5 seconds...")
             time.sleep(5)
+
+            # Check if the timeout has been reached
+            if timeout is not None and (time.time() - start_time) > timeout:
+                print(f"⏰ Timeout reached after {timeout} seconds.")
+                return None
+
         elif status_response["status"] == "complete":
 
             return status_response
+
         else:
-            print("💥 Something went wrong!")
-            break
+            print(f"💥 Unexpected status: {status_response['status']}")
+            return None
 
 
 def _import_form(
-    url: str, data: dict, file_path: Optional[str] = None
+    url: str, data: dict, file_path: Optional[Path] = None
 ) -> Optional[dict]:
     """
     Imports a form by sending a POST request with the XLS or XLSX file.
@@ -85,17 +108,14 @@ def _import_form(
         Optional[Dict]: The response from the import process if successful,
         None otherwise.
     """
-    if not file_path or not (
-        file_path.lower().endswith(".xls")
-        or file_path.lower().endswith(".xlsx")
-    ):
+    if not file_path or file_path.suffix.lower() not in [".xls", ".xlsx"]:
         print(
             "Error: The file must be an .xls or .xlsx form. "
             "Please provide a valid file path."
         )
         return None
 
-    if not os.path.exists(file_path):
+    if not file_path.exists():
         print(f"Error: File not found at {file_path}.")
         return None
 
@@ -109,24 +129,13 @@ def _import_form(
                 files=imported_xls_form,
                 params={"format": "json"},
             )
-
-            if response is None:
-                print(
-                    "Error: No response received. "
-                    "Please check your internet connection or the server."
-                )
-                return None
-
             if response.status_code == 201:
                 response_data = response.json()
                 current_form_import_url = response_data["url"]
                 import_response = _wait_for_completion(current_form_import_url)
                 return import_response
             else:
-                print(
-                    "Failed to start import. "
-                    f"Status code: {response.status_code}"
-                )
+                print("Failed to start import. " f"Status code: {response.status_code}")
                 print(response.text)
                 return None
     except AttributeError:
@@ -142,24 +151,51 @@ def _import_form(
         print(f"An unexpected error occurred: {e}")
         return None
 
-    except FileNotFoundError:
-        print(f"File not found: {file_path}. Please provide valid filepath.")
-        return None
+
+def find_bifrost_dir(start_dir: Path = Path(".")) -> Optional[Path]:
+    """
+    Traverses up the directory tree to find the .bifrost directory.
+    Args:
+        start_dir (Path): The directory to start the search from. Defaults to the current directory.
+
+    Returns:
+        Optional[Path]: The path to the .bifrost directory if found, otherwise None.
+
+    """
+    current_dir = start_dir.resolve()
+    while current_dir != current_dir.parent:
+        bifrost_dir = current_dir / ".bifrost"
+        if bifrost_dir.exists() and bifrost_dir.is_dir():
+            return bifrost_dir
+        current_dir = current_dir.parent
+    return None
 
 
-BIFROST_DIR = Path(".bifrost")
-INFO_FILE = BIFROST_DIR / "info.txt"
+def initialize_bifrost(
+    xlsx_path: Optional[Path] = None, bifrost_dir: Optional[Path] = None
+) -> None:
+    """
+    Initialize the .bifrost directory in the specified directory.
+    """
+    BIFROST_DIR = bifrost_dir or Path(".bifrost")
+    INFO_FILE = BIFROST_DIR / "info.txt"
 
-
-def initialize_bifrost(xlsx_path: str = None):
     if not BIFROST_DIR.exists():
         BIFROST_DIR.mkdir(parents=True)
 
     if not INFO_FILE.exists():
-        update_asset_info(asset_id=None, xlsx_path=xlsx_path)
+        update_asset_info(asset_id=None, xlsx_path=xlsx_path, info_file=INFO_FILE)
 
 
-def get_asset_id_and_xlsxform_path():
+def get_asset_id_and_xlsxform_path() -> (
+    Tuple[Optional[str], Optional[str], Optional[str]]
+):
+    """
+    Retrieve the Asset ID, XlsxForm Path, and Download Path from the info.txt file.
+    """
+    BIFROST_DIR = find_bifrost_dir() or Path(".bifrost")
+    INFO_FILE = BIFROST_DIR / "info.txt"
+
     if INFO_FILE.exists():
         with open(INFO_FILE, "r") as f:
             lines = f.readlines()
@@ -180,12 +216,21 @@ def get_asset_id_and_xlsxform_path():
 
 
 def update_asset_info(
-    asset_id: str = None, xlsx_path: str = None, download_path: str = None
+    asset_id: Optional[str] = None,
+    xlsx_path: Optional[Path] = None,
+    download_path: Optional[Path] = None,
+    info_file: Optional[Path] = None,
 ) -> None:
-
-    if not BIFROST_DIR.exists():
-        BIFROST_DIR.mkdir(parents=True)
-
+    """
+    Update the asset information in the specified info file.
+    """
+    if not info_file:
+        BIFROST_DIR = find_bifrost_dir() or Path(".bifrost")
+        INFO_FILE = BIFROST_DIR / "info.txt"
+    else:
+        INFO_FILE = info_file
+    if not INFO_FILE.parent.exists():
+        INFO_FILE.parent.mkdir(parents=True)
     lines = []
     if INFO_FILE.exists():
         with open(INFO_FILE, "r") as f:

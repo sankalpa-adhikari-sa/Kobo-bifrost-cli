@@ -1,41 +1,6 @@
-import pytest
-from typer.testing import CliRunner
+from unittest.mock import MagicMock, patch
+
 from bifrost_cli.commands.view import app as view_app
-from unittest.mock import patch, MagicMock
-
-
-@pytest.fixture
-def runner():
-    return CliRunner()
-
-
-@pytest.fixture
-def isolated_filesystem(runner):
-    with runner.isolated_filesystem() as fs:
-        yield fs
-
-
-@pytest.fixture(autouse=True)
-def mock_keyring():
-    with patch("keyring.get_password") as mock_get_password, patch(
-        "keyring.set_password"
-    ) as mock_set_password:
-        mock_get_password.return_value = "test-value"
-        yield {
-            "get_password": mock_get_password,
-            "set_password": mock_set_password,
-        }
-
-
-SERVICE_NAME = "kobo-bifrost"
-
-
-@pytest.fixture
-def mock_view_asset_snapshot_response():
-    return {
-        "enketopreviewlink": "https://eu.kobotoolbox.org/api/v2/asset_snapshots/snapshot_id/preview",
-        "source": {"settings": {"form_title": "new"}},
-    }
 
 
 @patch("bifrost_cli.commands.view._make_request")
@@ -65,7 +30,7 @@ def test_view_asset_snapshot_success(
         ],
     )
     assert result.exit_code == 0
-    assert "✅ Successfully fetched asset snaphsots" in result.output
+    assert "✅ Successfully fetched asset snaphsots" in result.stdout
 
 
 @patch("bifrost_cli.commands.view._make_request")
@@ -92,4 +57,4 @@ def test_view_asset_snapshot_invalid_asset_id(
         ],
     )
     assert result.exit_code == 0
-    assert "❌ Failed to fetch asset snapshot." in result.output
+    assert "❌ Failed to fetch asset snapshot." in result.stdout

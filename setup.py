@@ -1,21 +1,13 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
-setup(
-    name="bifrost",
-    version="0.0.1",
-    packages=find_packages(),
-    entry_points={
-        "console_scripts": [
-            "bifrost=bifrost_cli.bifrost:app",
-        ],
-    },
-    install_requires=[
-        "typer",
-        "keyring",
-        "pandas",
-        "requests",
-        "openpyxl",
-        "xlsxwriter",
-        "secretstorage",
-    ],
-)
+if __name__ == "__main__":
+    try:
+        setup()
+    except:  # noqa
+        print(
+            "\n\nAn error occurred while building the project, "
+            "please ensure you have the most updated version of setuptools, "
+            "setuptools_scm and wheel with:\n"
+            "   pip install -U setuptools setuptools_scm wheel\n\n"
+        )
+        raise

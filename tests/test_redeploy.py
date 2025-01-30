@@ -1,60 +1,6 @@
-import pytest
-from typer.testing import CliRunner
+from unittest.mock import MagicMock, patch
+
 from bifrost_cli.commands.redeploy import app as redeploy_app
-from unittest.mock import patch, MagicMock
-
-
-@pytest.fixture
-def runner():
-    return CliRunner()
-
-
-@pytest.fixture
-def isolated_filesystem(runner):
-    with runner.isolated_filesystem() as fs:
-        yield fs
-
-
-@pytest.fixture
-def mock_redeploy_response():
-    return {
-        "asset": {
-            "version_count": "",
-            "deployed_version_id": "",
-            "deployment__submission_count": "",
-            "deployment_status": "deployed",
-            "deployment__links": {
-                "url": "https://",
-                "single_url": "",
-                "single_once_url": "https://",
-                "offline_url": "https://",
-                "preview_url": "https://",
-                "iframe_url": "https://",
-                "single_iframe_url": "https://",
-                "single_once_iframe_url": "https://",
-            },
-        }
-    }
-
-
-@pytest.fixture
-def mock_version_id():
-    return {"version_id": "valid_version_id"}
-
-
-@pytest.fixture(autouse=True)
-def mock_keyring():
-    with patch("keyring.get_password") as mock_get_password, patch(
-        "keyring.set_password"
-    ) as mock_set_password:
-        mock_get_password.return_value = "test-value"
-        yield {
-            "get_password": mock_get_password,
-            "set_password": mock_set_password,
-        }
-
-
-SERVICE_NAME = "kobo-bifrost"
 
 
 @patch("bifrost_cli.commands.redeploy._make_request")
@@ -64,7 +10,7 @@ def test_redeploy_success(
     mock_keyring,
     mock_redeploy_response,
     mock_version_id,
-):
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
@@ -89,7 +35,7 @@ def test_redeploy_success(
     )
 
     assert result.exit_code == 0
-    assert "✅ Successfully Re-deployed form" in result.output
+    assert "✅ Successfully Re-deployed form" in result.stdout
 
 
 @patch("bifrost_cli.commands.redeploy._make_request")
@@ -98,7 +44,7 @@ def test_redeploy_failure(
     runner,
     mock_keyring,
     mock_version_id,
-):
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
@@ -122,7 +68,7 @@ def test_redeploy_failure(
     )
 
     assert result.exit_code == 0
-    assert "Something went wrong!" in result.output
+    assert "Something went wrong!" in result.stdout
 
 
 @patch("bifrost_cli.commands.redeploy._make_request")
@@ -131,7 +77,7 @@ def test_redeploy_not_deployed(
     runner,
     mock_keyring,
     mock_version_id,
-):
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
@@ -140,10 +86,12 @@ def test_redeploy_not_deployed(
     mock_response_deploy1 = MagicMock()
     mock_response_deploy1.status_code = 200
     mock_response_deploy1.json.return_value = mock_version_id
+    mock_response_deploy2 = MagicMock()
+    mock_response_deploy2.status_code = 405
 
     mock_make_request.side_effect = [
         mock_response_deploy1,
-        None,
+        mock_response_deploy2,
     ]
 
     result = runner.invoke(
@@ -152,10 +100,7 @@ def test_redeploy_not_deployed(
     )
 
     assert result.exit_code == 0
-    assert (
-        "Error: The form cannot be redeployed.Please check the deployment status of the form and ensure it is deployed before attempting to redeploy."
-        in result.output.replace("\n", "")
-    )
+    assert "Error: The form cannot be redeployed." in result.stdout.replace("\n", "")
 
 
 @patch("bifrost_cli.commands.redeploy._make_request")
@@ -163,13 +108,17 @@ def test_redeploy_form_not_exist(
     mock_make_request,
     runner,
     mock_keyring,
-):
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
     }.get
-
-    mock_make_request.return_value = None
+    mock_response = MagicMock()
+    mock_response.status_code = 404
+    mock_response.json.return_value = {
+        "detail": "TThe form you are trying to redeploy may not exist."
+    }
+    mock_make_request.sideeffect = mock_response
 
     result = runner.invoke(
         redeploy_app,
@@ -177,7 +126,4 @@ def test_redeploy_form_not_exist(
     )
 
     assert result.exit_code == 0
-    assert (
-        "Error: The form you are trying to redeploy may not exist."
-        in result.output
-    )
+    assert "Error: The form you are trying to redeploy may not exist." in result.stdout

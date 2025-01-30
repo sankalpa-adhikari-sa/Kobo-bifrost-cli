@@ -1,6 +1,7 @@
-from typing import Optional
-import typer
+from typing import Optional, Tuple
+
 import keyring
+import typer
 from rich import print
 
 app = typer.Typer()
@@ -20,7 +21,7 @@ def save_credentials(api_key: str, api_url: str) -> None:
     keyring.set_password(SERVICE_NAME, "api_url", api_url)
 
 
-def get_credentials() -> tuple[str, str]:
+def get_credentials() -> Tuple[Optional[str], Optional[str]]:
     """
     Retrieve credentials from the keyring.
 
@@ -29,6 +30,7 @@ def get_credentials() -> tuple[str, str]:
     """
     api_key = keyring.get_password(SERVICE_NAME, "api_key")
     api_url = keyring.get_password(SERVICE_NAME, "api_url")
+
     return api_key, api_url
 
 
@@ -48,12 +50,8 @@ def delete_credentials() -> None:
 
 @app.command()
 def set_credentials(
-    api_url: Optional[str] = typer.Option(
-        None, prompt=False, help="Your API URL."
-    ),
-    api_key: Optional[str] = typer.Option(
-        None, prompt=False, help="Your API key."
-    ),
+    api_url: Optional[str] = typer.Option(None, prompt=False, help="Your API URL."),
+    api_key: Optional[str] = typer.Option(None, prompt=False, help="Your API key."),
 ) -> None:
     """
     Set credentials by providing an API key and API URL.
@@ -66,9 +64,7 @@ def set_credentials(
 
     if existing_api_key and existing_api_url:
         print(f"⚠️ You are already logged in with API URL: {existing_api_url}")
-        overwrite = typer.confirm(
-            "Do you want to overwrite the existing credentials?"
-        )
+        overwrite = typer.confirm("Do you want to overwrite the existing credentials?")
         if not overwrite:
             print("✅ Existing credentials retained. No changes made.")
             return
@@ -77,6 +73,9 @@ def set_credentials(
         api_url = typer.prompt("Please enter your API URL")
     if not api_key:
         api_key = typer.prompt("Please enter your API key")
+
+    if api_url is None or api_key is None:
+        raise ValueError("API URL and API Key cannot be None.")
 
     save_credentials(api_key, api_url)
     print("✅ Credentials saved securely.")

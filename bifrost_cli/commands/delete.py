@@ -1,10 +1,10 @@
-from typing_extensions import Annotated
 import typer
-from rich.progress import Progress, SpinnerColumn, TextColumn
-from ..utils import get_credentials, _make_request
 from rich import print
+from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.prompt import Confirm
+from typing_extensions import Annotated
 
+from bifrost_cli.utils import _make_request, get_credentials
 
 app = typer.Typer()
 
@@ -46,12 +46,14 @@ def delete(
             "--asset-id",
             help="The asset ID of the form to delete.",
         ),
-    ]
+    ],
 ) -> None:
     """
     Deletes an asset(form).
     """
     _, base_url = get_credentials()
+    if base_url is None:
+        raise ValueError("Base URL is missing. Please provide valid credentials.")
     if not Confirm.ask(
         "Do you want to delete the project?\n"
         "[red]This action will delete all associated data and files.[/red]"

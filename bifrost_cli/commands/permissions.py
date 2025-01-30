@@ -1,8 +1,8 @@
-from typing_extensions import Annotated
 import typer
-from ..utils import get_credentials, _make_request
 from rich import print
+from typing_extensions import Annotated
 
+from bifrost_cli.utils import _make_request, get_credentials
 
 app = typer.Typer()
 
@@ -28,26 +28,21 @@ def submission_without_auth(asset_id: str, base_url: str) -> None:
         print("💥 Failed to set permissions.")
 
 
-def clone_asset_premission(
-    asset_id: str, source_asset_id: str, base_url: str
-) -> None:
+def clone_asset_premission(asset_id: str, source_asset_id: str, base_url: str) -> None:
     """
     Clone the permissions (authorizations) from other asset.
 
     Args:
         asset_id (str): Asset id of project to which permission will be coloned
-        source_asset_id (str): Asset id of project from which permission needs to be coloned
+        source_asset_id (str):
+            Asset id of project from which permission needs to be coloned
         base_url (str): The base URL of the API.
 
 
     """
-    clone_premission_url = (
-        f"{base_url}assets/{asset_id}/permission-assignments/clone/"
-    )
+    clone_premission_url = f"{base_url}assets/{asset_id}/permission-assignments/clone/"
     cloned_premissions = {"clone_from": source_asset_id}
-    response = _make_request(
-        "PATCH", url=clone_premission_url, data=cloned_premissions
-    )
+    response = _make_request("PATCH", url=clone_premission_url, data=cloned_premissions)
 
     if response is not None and response.status_code == 200:
 
@@ -68,7 +63,7 @@ def clone_permissions(
         str,
         typer.Option(
             "--from",
-            help="Asset id of project from which permission needs to be coloned",
+            help=("Asset id of project from which permission needs to be coloned"),
         ),
     ],
     target_asset_id: Annotated[
@@ -78,11 +73,13 @@ def clone_permissions(
             help="Asset id of project to which permission will be coloned",
         ),
     ],
-):
+) -> None:
     """
     Clones permissions from source project to another target project.
     """
     _, base_url = get_credentials()
+    if base_url is None:
+        raise ValueError("Base URL is missing. Please provide valid credentials.")
     clone_asset_premission(
         asset_id=target_asset_id,
         source_asset_id=source_asset_id,
@@ -106,12 +103,14 @@ def set_permissions(
             help="Allow submission without authentication.",
         ),
     ],
-):
+) -> None:
     """
     Sets asset permissions.
 
     """
     _, base_url = get_credentials()
+    if base_url is None:
+        raise ValueError("Base URL is missing. Please provide valid credentials.")
 
     if no_auth_sub:
         submission_without_auth(asset_id=asset_id, base_url=base_url)

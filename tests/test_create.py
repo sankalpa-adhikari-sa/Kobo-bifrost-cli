@@ -1,80 +1,8 @@
-import pytest
-from typer.testing import CliRunner
-from bifrost_cli.commands.create import app
-from unittest.mock import patch, MagicMock
 import os
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 
-
-@pytest.fixture
-def runner():
-    return CliRunner()
-
-
-@pytest.fixture
-def isolated_filesystem(runner):
-    with runner.isolated_filesystem() as fs:
-        yield fs
-
-
-@pytest.fixture
-def mock_view_asset_snapshot_response():
-    return {
-        "enketopreviewlink": "https://eu.kobotoolbox.org/api/v2/asset_snapshots/snapshot_id/preview",
-        "source": {"settings": {"form_title": "new"}},
-    }
-
-
-@pytest.fixture(autouse=True)
-def mock_keyring():
-    with patch("keyring.get_password") as mock_get_password, patch(
-        "keyring.set_password"
-    ) as mock_set_password:
-        mock_get_password.return_value = "test-value"
-        yield {
-            "get_password": mock_get_password,
-            "set_password": mock_set_password,
-        }
-
-
-SERVICE_NAME = "kobo-bifrost"
-
-
-@pytest.fixture
-def mock_response():
-    return {
-        "status": "complete",
-        "uid": "iEq4FGzZkLFKn33ZhkwEFi",
-        "messages": {
-            "created": [
-                {
-                    "uid": "aLgFhiUU9SECuWh2Q8oHtg",
-                    "kind": "asset",
-                    "summary": {"languages": []},
-                    "owner__username": "some_user",
-                }
-            ]
-        },
-        "date_created": "2024-12-25T09:30:50.899133Z",
-    }
-
-
-@pytest.fixture
-def mock_deploy_response():
-    return {
-        "asset": {
-            "deployment_status": "deployed",
-            "deployment__links": {
-                "url": "https://",
-                "single_url": "https:",
-                "single_once_url": "https://",
-                "offline_url": "https://",
-                "preview_url": "https://",
-                "iframe_url": "https://",
-                "single_iframe_url": "https://",
-                "single_once_iframe_url": "https://",
-            },
-        }
-    }
+from bifrost_cli.commands.create import app
 
 
 @patch("bifrost_cli.commands.create._import_form")
@@ -82,16 +10,16 @@ def mock_deploy_response():
 def test_create_success(
     mock_update_asset_info,
     mock_import_form,
-    mock_response,
+    mock_import_create_response,
     runner,
     mock_keyring,
     isolated_filesystem,
-):
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
     }.get
-    mock_import_form.return_value = mock_response
+    mock_import_form.return_value = mock_import_create_response
     mock_update_asset_info.return_value = None
     result = runner.invoke(
         app,
@@ -110,12 +38,12 @@ def test_create_preview_success(
     mock_update_asset_info,
     mock_import_form,
     mock_make_request,
-    mock_response,
+    mock_import_create_response,
     runner,
     mock_keyring,
     isolated_filesystem,
     mock_view_asset_snapshot_response,
-):
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
@@ -125,7 +53,7 @@ def test_create_preview_success(
     mock_response_preview.json.return_value = mock_view_asset_snapshot_response
     mock_make_request.return_value = mock_response_preview
 
-    mock_import_form.return_value = mock_response
+    mock_import_form.return_value = mock_import_create_response
     mock_update_asset_info.return_value = None
     result = runner.invoke(
         app,
@@ -138,7 +66,7 @@ def test_create_preview_success(
     assert result.exit_code == 0
     assert "Information of created asset" in result.stdout
     assert "aLgFhiUU9SECuWh2Q8oHtg" in result.stdout
-    assert "✅ Successfully fetched asset snaphsots" in result.output
+    assert "✅ Successfully fetched asset snaphsots" in result.stdout
     mock_import_form.assert_called_once()
 
 
@@ -149,18 +77,18 @@ def test_create_preview_failure(
     mock_update_asset_info,
     mock_import_form,
     mock_make_request,
-    mock_response,
+    mock_import_create_response,
     runner,
     mock_keyring,
     isolated_filesystem,
-):
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
     }.get
     mock_make_request.return_value = None
 
-    mock_import_form.return_value = mock_response
+    mock_import_form.return_value = mock_import_create_response
     mock_update_asset_info.return_value = None
     result = runner.invoke(
         app,
@@ -173,7 +101,7 @@ def test_create_preview_failure(
     assert result.exit_code == 0
     assert "Information of created asset" in result.stdout
     assert "aLgFhiUU9SECuWh2Q8oHtg" in result.stdout
-    assert "❌ Failed to fetch asset snapshot." in result.output
+    assert "❌ Failed to fetch asset snapshot." in result.stdout
     mock_import_form.assert_called_once()
 
 
@@ -185,7 +113,7 @@ def test_create_failure(
     runner,
     mock_keyring,
     isolated_filesystem,
-):
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
@@ -201,14 +129,15 @@ def test_create_failure(
     assert "Failed to create form" in result.stdout
 
 
-def test_create_invalid_file(runner, mock_keyring, isolated_filesystem):
+def test_create_invalid_file(runner, mock_keyring, isolated_filesystem) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
     }.get
+    invalid_file_path = Path(isolated_filesystem)
     result = runner.invoke(
         app,
-        ["--filepath", isolated_filesystem],
+        ["--filepath", invalid_file_path],
     )
     assert result.exit_code == 0
     assert (
@@ -218,7 +147,7 @@ def test_create_invalid_file(runner, mock_keyring, isolated_filesystem):
     assert "Failed to create form" in result.stdout
 
 
-def test_create_no_file(runner, mock_keyring, isolated_filesystem):
+def test_create_no_file(runner, mock_keyring, isolated_filesystem) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
@@ -231,7 +160,7 @@ def test_create_no_file(runner, mock_keyring, isolated_filesystem):
     )
     assert result.exit_code == 0
 
-    assert f"Error: File not found at {file_path}." in result.stdout
+    assert f"Error: File not found at {file_path}." in result.stdout.replace("\n", "")
     assert "Failed to create form" in result.stdout
 
 
@@ -246,7 +175,7 @@ def test_create_deploy_success(
     runner,
     mock_keyring,
     isolated_filesystem,
-):
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
@@ -280,7 +209,7 @@ def test_create_deploy_failure(
     runner,
     mock_keyring,
     isolated_filesystem,
-):
+) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
         ("kobo-bifrost", "api_url"): "previous-api-url",
@@ -297,7 +226,11 @@ def test_create_deploy_failure(
         ["--filepath", isolated_filesystem, "-d"],
     )
     assert result.exit_code == 0
-    assert "Something went wrong!" in result.stdout
+    assert (
+        "Error: The form you are trying to deploy may not exist or "
+        "The form cannot be deployed as it may already be deployed."
+        in result.stdout.replace("\n", "")
+    )
 
     mock_create_form.assert_called_once()
     mock_make_request.assert_called_once()

@@ -3,8 +3,14 @@ venv/
 .pytest_cache/
 __pycache__/
 .env
+*.xls
 *.xlsx
-*.xlsx
+*.xml
+*.csv
 build
 bifrost.egg-info
 *.txt
+.idea/
+.bifrost/
+.mypy_cache/
+.tox/
