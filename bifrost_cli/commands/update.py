@@ -6,8 +6,8 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from typing_extensions import Annotated, Optional, cast
 
 from bifrost_cli.commands.deploy import deploy_form
-from bifrost_cli.commands.redeploy import redeploy_form
 from bifrost_cli.commands.preview import preview_asset_snapshot
+from bifrost_cli.commands.redeploy import redeploy_form
 from bifrost_cli.utils import (
     _import_form,
     get_asset_id_and_xlsxform_path,

@@ -9,9 +9,10 @@ from bifrost_cli.commands.export import app as export_app
 from bifrost_cli.commands.initialize import app as init_app
 from bifrost_cli.commands.list_asset import app as list_asset_app
 from bifrost_cli.commands.permissions import app as permissions_app
+from bifrost_cli.commands.preview import app as preview_app
 from bifrost_cli.commands.redeploy import app as redeploy_app
 from bifrost_cli.commands.update import app as update_app
-from bifrost_cli.commands.preview import app as preview_app
+
 
 app = typer.Typer()
 
