@@ -13,7 +13,6 @@ from bifrost_cli.commands.preview import app as preview_app
 from bifrost_cli.commands.redeploy import app as redeploy_app
 from bifrost_cli.commands.update import app as update_app
 
-
 app = typer.Typer()
 
 app.add_typer(
