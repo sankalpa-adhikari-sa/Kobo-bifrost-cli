@@ -1,16 +1,16 @@
 from unittest.mock import MagicMock, patch
 
-from bifrost_cli.commands.view import app as view_app
+from bifrost_cli.commands.preview import app as preview_app
 
 
-@patch("bifrost_cli.commands.view._make_request")
-@patch("bifrost_cli.commands.view.update_asset_info")
-def test_view_asset_snapshot_success(
+@patch("bifrost_cli.commands.preview._make_request")
+@patch("bifrost_cli.commands.preview.update_asset_info")
+def test_preview_asset_snapshot_success(
     mock_update_asset_info,
     mock_make_request,
     runner,
     mock_keyring,
-    mock_view_asset_snapshot_response,
+    mock_preview_asset_snapshot_response,
 ):
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
@@ -20,10 +20,10 @@ def test_view_asset_snapshot_success(
     mock_update_asset_info.return_value = None
     mock_response = MagicMock()
     mock_response.status_code = 201
-    mock_response.json.return_value = mock_view_asset_snapshot_response
+    mock_response.json.return_value = mock_preview_asset_snapshot_response
     mock_make_request.return_value = mock_response
     result = runner.invoke(
-        view_app,
+        preview_app,
         [
             "--asset-id",
             "valid_asset_id",
@@ -33,9 +33,9 @@ def test_view_asset_snapshot_success(
     assert "✅ Successfully fetched asset snapshots" in result.stdout
 
 
-@patch("bifrost_cli.commands.view._make_request")
-@patch("bifrost_cli.commands.view.update_asset_info")
-def test_view_asset_snapshot_invalid_asset_id(
+@patch("bifrost_cli.commands.preview._make_request")
+@patch("bifrost_cli.commands.preview.update_asset_info")
+def test_preview_asset_snapshot_invalid_asset_id(
     mock_update_asset_info,
     mock_make_request,
     runner,
@@ -50,7 +50,7 @@ def test_view_asset_snapshot_invalid_asset_id(
 
     mock_make_request.return_value = None
     result = runner.invoke(
-        view_app,
+        preview_app,
         [
             "--asset-id",
             "invalid_asset_id",

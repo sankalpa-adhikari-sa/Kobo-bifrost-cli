@@ -14,7 +14,7 @@ from bifrost_cli.utils import (
 app = typer.Typer()
 
 
-def view_asset_snapshot(
+def preview_asset_snapshot(
     asset_id: str,
     base_url: str,
 ) -> Optional[Dict]:
@@ -51,7 +51,7 @@ def view_asset_snapshot(
 
 
 @app.command()
-def view(
+def preview(
     asset_id: Annotated[
         Optional[str],
         typer.Option(
@@ -64,7 +64,7 @@ def view(
     ] = None,
 ) -> None:
     """
-    View asset snapshots.
+    Preview asset snapshots.
     """
     _, base_url = get_credentials()
     if base_url is None:
@@ -80,7 +80,7 @@ def view(
         asset_id = saved_asset_id
 
     assert asset_id is not None
-    res = view_asset_snapshot(asset_id=asset_id, base_url=base_url)
+    res = preview_asset_snapshot(asset_id=asset_id, base_url=base_url)
     if res:
         typer.launch(res["enketopreviewlink"])
         table = Table(title="Deployment Details")

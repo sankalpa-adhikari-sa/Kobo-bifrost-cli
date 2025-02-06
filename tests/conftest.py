@@ -36,7 +36,7 @@ SERVICE_NAME = "kobo-bifrost"
 
 
 @pytest.fixture
-def mock_view_asset_snapshot_response():
+def mock_preview_asset_snapshot_response():
     return {
         "enketopreviewlink": "https://eu.kobotoolbox.org/api/v2/asset_snapshots/snapshot_id/preview",
         "source": {"settings": {"form_title": "new"}},

@@ -342,7 +342,7 @@ def test_update_redeploy_form_not_exist(
     assert "Error: The form you are trying to redeploy may not exist." in result.stdout
 
 
-@patch("bifrost_cli.commands.view._make_request")
+@patch("bifrost_cli.commands.preview._make_request")
 @patch("bifrost_cli.commands.update._import_form")
 @patch("bifrost_cli.commands.update.update_asset_info")
 def test_update_preview_success(
@@ -352,7 +352,7 @@ def test_update_preview_success(
     runner,
     mock_keyring,
     mock_import_update_response,
-    mock_view_asset_snapshot_response,
+    mock_preview_asset_snapshot_response,
 ) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
@@ -361,7 +361,7 @@ def test_update_preview_success(
 
     mock_response_preview = MagicMock()
     mock_response_preview.status_code = 201
-    mock_response_preview.json.return_value = mock_view_asset_snapshot_response
+    mock_response_preview.json.return_value = mock_preview_asset_snapshot_response
     mock_make_request.return_value = mock_response_preview
 
     mock_import_form.return_value = mock_import_update_response
@@ -382,7 +382,7 @@ def test_update_preview_success(
     assert "✅ Successfully fetched asset snapshots" in result.stdout
 
 
-@patch("bifrost_cli.commands.view._make_request")
+@patch("bifrost_cli.commands.preview._make_request")
 @patch("bifrost_cli.commands.update._import_form")
 @patch("bifrost_cli.commands.update.update_asset_info")
 def test_update_asset_snapshot_invalid_asset_id(
@@ -392,7 +392,7 @@ def test_update_asset_snapshot_invalid_asset_id(
     runner,
     mock_keyring,
     mock_import_update_response,
-    mock_view_asset_snapshot_response,
+    mock_preview_asset_snapshot_response,
 ) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",

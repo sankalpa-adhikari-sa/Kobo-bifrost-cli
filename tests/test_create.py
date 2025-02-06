@@ -31,7 +31,7 @@ def test_create_success(
     mock_import_form.assert_called_once()
 
 
-@patch("bifrost_cli.commands.view._make_request")
+@patch("bifrost_cli.commands.preview._make_request")
 @patch("bifrost_cli.commands.create._import_form")
 @patch("bifrost_cli.commands.create.update_asset_info")
 def test_create_preview_success(
@@ -42,7 +42,7 @@ def test_create_preview_success(
     runner,
     mock_keyring,
     isolated_filesystem,
-    mock_view_asset_snapshot_response,
+    mock_preview_asset_snapshot_response,
 ) -> None:
     mock_keyring["get_password"].side_effect = {
         ("kobo-bifrost", "api_key"): "previous-api-key",
@@ -50,7 +50,7 @@ def test_create_preview_success(
     }.get
     mock_response_preview = MagicMock()
     mock_response_preview.status_code = 201
-    mock_response_preview.json.return_value = mock_view_asset_snapshot_response
+    mock_response_preview.json.return_value = mock_preview_asset_snapshot_response
     mock_make_request.return_value = mock_response_preview
 
     mock_import_form.return_value = mock_import_create_response
@@ -70,7 +70,7 @@ def test_create_preview_success(
     mock_import_form.assert_called_once()
 
 
-@patch("bifrost_cli.commands.view._make_request")
+@patch("bifrost_cli.commands.preview._make_request")
 @patch("bifrost_cli.commands.create._import_form")
 @patch("bifrost_cli.commands.create.update_asset_info")
 def test_create_preview_failure(

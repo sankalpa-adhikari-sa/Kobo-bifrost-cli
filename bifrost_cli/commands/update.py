@@ -7,7 +7,7 @@ from typing_extensions import Annotated, Optional, cast
 
 from bifrost_cli.commands.deploy import deploy_form
 from bifrost_cli.commands.redeploy import redeploy_form
-from bifrost_cli.commands.view import view_asset_snapshot
+from bifrost_cli.commands.preview import preview_asset_snapshot
 from bifrost_cli.utils import (
     _import_form,
     get_asset_id_and_xlsxform_path,
@@ -136,7 +136,7 @@ def update(
         if redeploy:
             redeploy_form(asset_id=res_uid, base_url=base_url)
         if preview_snapshots:
-            res_snap = view_asset_snapshot(asset_id=res_uid, base_url=base_url)
+            res_snap = preview_asset_snapshot(asset_id=res_uid, base_url=base_url)
             if res_snap:
                 typer.launch(res_snap["enketopreviewlink"])
 
