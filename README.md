@@ -36,11 +36,11 @@ pip uninstall bifrost
 ## Commands
 
 | Command             | Description                                                                                             | Options                                                                                                    |
-| ------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+|---------------------|---------------------------------------------------------------------------------------------------------| ---------------------------------------------------------------------------------------------------------- |
 | `init`              | Initializes a new project by creating a structured Excel workbook with optional conditional formatting. |                                                                                                            |
 | `list-assets`       | Lists all assets with basic information                                                                 |                                                                                                            |
 | `create`            | Creates a new asset in kobotoolbox                                                                      | `--filepath`<br> `[--deploy, -d]`                                                                          |
-| `view`              | View asset snapshots                                                                                    | `--asset-id`                                                                                               |
+| `preview`           | Preview asset snapshots                                                                                 | `--asset-id`                                                                                               |
 | `deploy`            | Deploys an specified asset                                                                              | `--asset-id`                                                                                               |
 | `update`            | Updates a specified existing asset                                                                      | `--asset-id`<br>`--filepath` <br>`[--deploy, -d]`<br> `[--redeploy, -rd]` <br>`[--preview-snapshots, -ps]` |
 | `redeploy`          | Redeploys a specified asset                                                                             | `--asset-id`                                                                                               |
@@ -119,10 +119,10 @@ bifrost create --filepath PATH_TO_XLS_FORM
 bifrost deploy --asset-id ASSET_ID
 ```
 
-#### View Koboform snapshot `view`
+#### View Koboform snapshot `preview`
 
 ```bash
-bifrost view --asset-id ASSET_ID
+bifrost preview --asset-id ASSET_ID
 ```
 
 #### Update Koboform `update`
