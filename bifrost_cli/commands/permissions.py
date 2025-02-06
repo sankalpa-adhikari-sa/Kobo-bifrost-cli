@@ -1,8 +1,12 @@
 import typer
 from rich import print
-from typing_extensions import Annotated
+from typing_extensions import Annotated, Optional
 
-from bifrost_cli.utils import _make_request, get_credentials
+from bifrost_cli.utils import (
+    _make_request,
+    get_asset_id_and_xlsxform_path,
+    get_credentials,
+)
 
 app = typer.Typer()
 
@@ -90,19 +94,22 @@ def clone_permissions(
 # To do: Add other permissions and make --no-auth-sub flag to be optional.
 @app.command()
 def set_permissions(
-    asset_id: Annotated[
-        str,
-        typer.Option(
-            "--asset-id",
-            help="The asset ID of the form to delete.",
-        ),
-    ],
     no_auth_sub: Annotated[
         bool,
         typer.Option(
             help="Allow submission without authentication.",
         ),
     ],
+    asset_id: Annotated[
+        Optional[str],
+        typer.Option(
+            "--asset-id",
+            help=(
+                "The asset ID of the form to update."
+                "Provide this or ensure it is saved."
+            ),
+        ),
+    ] = None,
 ) -> None:
     """
     Sets asset permissions.
@@ -111,6 +118,13 @@ def set_permissions(
     _, base_url = get_credentials()
     if base_url is None:
         raise ValueError("Base URL is missing. Please provide valid credentials.")
+    if not asset_id:
+        asset_id, _, _ = get_asset_id_and_xlsxform_path()
+        if not asset_id:
+            raise typer.BadParameter(
+                "Missing argument 'ASSET_ID'."
+                " Provide it as an argument or ensure it's saved."
+            )
 
     if no_auth_sub:
         submission_without_auth(asset_id=asset_id, base_url=base_url)
