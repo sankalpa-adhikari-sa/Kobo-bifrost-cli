@@ -66,7 +66,7 @@ def test_create_preview_success(
     assert result.exit_code == 0
     assert "Information of created asset" in result.stdout
     assert "aLgFhiUU9SECuWh2Q8oHtg" in result.stdout
-    assert "✅ Successfully fetched asset snaphsots" in result.stdout
+    assert "✅ Successfully fetched asset snapshots" in result.stdout
     mock_import_form.assert_called_once()
 
 

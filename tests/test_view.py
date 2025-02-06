@@ -30,7 +30,7 @@ def test_view_asset_snapshot_success(
         ],
     )
     assert result.exit_code == 0
-    assert "✅ Successfully fetched asset snaphsots" in result.stdout
+    assert "✅ Successfully fetched asset snapshots" in result.stdout
 
 
 @patch("bifrost_cli.commands.view._make_request")

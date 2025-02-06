@@ -56,4 +56,4 @@ def test_delete_success(mock_make_request, runner, mock_keyring):
 
     assert result.exit_code == 0
     assert "Do you want to delete the project?" in result.stdout
-    assert "✅ Succssfully Deleted Form" in result.stdout
+    assert "✅ Successfully Deleted Form" in result.stdout

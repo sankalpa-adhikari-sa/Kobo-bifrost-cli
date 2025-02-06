@@ -33,7 +33,7 @@ def delete_form(asset_id: str, base_url: str) -> None:
 
     if res is not None and res.status_code == 200:
 
-        print(f"✅ Succssfully Deleted Form {asset_id}")
+        print(f"✅ Successfully Deleted Form {asset_id}")
     else:
         print("💥 Failed to Delete Form")
 

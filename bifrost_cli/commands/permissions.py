@@ -19,44 +19,44 @@ def submission_without_auth(asset_id: str, base_url: str) -> None:
         base_url (str): The base URL of the API.
         asset_id (str): The ID of the form.
     """
-    premission_url = f"{base_url}assets/{asset_id}/permission-assignments/"
-    premission = {
+    permission_url = f"{base_url}assets/{asset_id}/permission-assignments/"
+    permission = {
         "user": "https://eu.kobotoolbox.org/api/v2/users/AnonymousUser/",
         "permission": "https://eu.kobotoolbox.org/api/v2/permissions/add_submissions/",
     }
 
-    response = _make_request("POST", url=premission_url, data=premission)
+    response = _make_request("POST", url=permission_url, data=permission)
     if response is not None and response.status_code == 201:
-        print("✅ Successfuly updated premission to submit data without auth.")
+        print("✅ Successfully updated permission to submit data without auth.")
     else:
         print("💥 Failed to set permissions.")
 
 
-def clone_asset_premission(asset_id: str, source_asset_id: str, base_url: str) -> None:
+def clone_asset_permission(asset_id: str, source_asset_id: str, base_url: str) -> None:
     """
     Clone the permissions (authorizations) from other asset.
 
     Args:
-        asset_id (str): Asset id of project to which permission will be coloned
+        asset_id (str): Asset id of project to which permission will be cloned
         source_asset_id (str):
-            Asset id of project from which permission needs to be coloned
+            Asset id of project from which permission needs to be cloned
         base_url (str): The base URL of the API.
 
 
     """
-    clone_premission_url = f"{base_url}assets/{asset_id}/permission-assignments/clone/"
-    cloned_premissions = {"clone_from": source_asset_id}
-    response = _make_request("PATCH", url=clone_premission_url, data=cloned_premissions)
+    clone_permission_url = f"{base_url}assets/{asset_id}/permission-assignments/clone/"
+    cloned_permission = {"clone_from": source_asset_id}
+    response = _make_request("PATCH", url=clone_permission_url, data=cloned_permission)
 
     if response is not None and response.status_code == 200:
 
         print(
-            f"✅ Successfuly cloned premission from \n source_asset_id: {source_asset_id}"
+            f"✅ Successfully cloned permission from \n source_asset_id: {source_asset_id}"
         )
 
     else:
         print(
-            "💥 Failed to clone premission."
+            "💥 Failed to clone permission."
             "Make Sure the source and target asset uid are valid."
         )
 
@@ -74,7 +74,7 @@ def clone_permissions(
         str,
         typer.Option(
             "--to",
-            help="Asset id of project to which permission will be coloned",
+            help="Asset id of project to which permission will be cloned",
         ),
     ],
 ) -> None:
@@ -84,7 +84,7 @@ def clone_permissions(
     _, base_url = get_credentials()
     if base_url is None:
         raise ValueError("Base URL is missing. Please provide valid credentials.")
-    clone_asset_premission(
+    clone_asset_permission(
         asset_id=target_asset_id,
         source_asset_id=source_asset_id,
         base_url=base_url,

@@ -19,7 +19,7 @@ def test_set_permission_success(mock_make_request, mock_keyring, runner):
 
     assert result.exit_code == 0
     assert (
-        "✅ Successfuly updated premission to submit data without auth."
+        "✅ Successfully updated permission to submit data without auth."
         in result.stdout
     )
 
@@ -64,7 +64,7 @@ def test_clone_permission_failure(mock_make_request, mock_keyring, runner):
     )
 
     assert result.exit_code == 0
-    assert ("💥 Failed to clone premission.") in result.stdout
+    assert ("💥 Failed to clone permission.") in result.stdout
 
 
 @patch("bifrost_cli.commands.permissions._make_request")
@@ -88,4 +88,4 @@ def test_clone_permission_success(mock_make_request, mock_keyring, runner):
     )
 
     assert result.exit_code == 0
-    assert "✅ Successfuly cloned premission" in result.stdout
+    assert "✅ Successfully cloned permission" in result.stdout

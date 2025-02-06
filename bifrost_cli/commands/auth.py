@@ -26,7 +26,7 @@ def get_credentials() -> Tuple[Optional[str], Optional[str]]:
     Retrieve credentials from the keyring.
 
     Returns:
-        tuple[str, str]: Api Key and API Url stored in keyrig
+        tuple[str, str]: Api Key and API Url stored in keyring
     """
     api_key = keyring.get_password(SERVICE_NAME, "api_key")
     api_url = keyring.get_password(SERVICE_NAME, "api_url")

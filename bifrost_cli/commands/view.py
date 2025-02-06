@@ -42,7 +42,7 @@ def view_asset_snapshot(
         progress.update(task, completed=100)
 
     if response is not None and response.status_code == 201:
-        print("✅ Successfully fetched asset snaphsots")
+        print("✅ Successfully fetched asset snapshots")
         return cast(Dict, response.json())
     else:
         print("❌ Failed to fetch asset snapshot.")
