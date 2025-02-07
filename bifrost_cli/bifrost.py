@@ -5,6 +5,7 @@ from bifrost_cli.commands.auth import app as auth_app
 from bifrost_cli.commands.create import app as create_app
 from bifrost_cli.commands.delete import app as delete_app
 from bifrost_cli.commands.deploy import app as deploy_app
+from bifrost_cli.commands.deployment_links import app as deployment_links_app
 from bifrost_cli.commands.export import app as export_app
 from bifrost_cli.commands.initialize import app as init_app
 from bifrost_cli.commands.list_asset import app as list_asset_app
@@ -38,6 +39,7 @@ app.add_typer(
     name="asset",
     help="Download specified asset in  XML or XLSx format.",
 )
+app.add_typer(deployment_links_app)
 
 if __name__ == "__main__":
     app()
