@@ -61,6 +61,29 @@ def mock_deploy_response():
         }
     }
 
+@pytest.fixture
+def mock_asset_deployed_response():
+    return {
+    "deployment__links": {
+        "url": "",
+        "single_url": "",
+        "single_once_url": "",
+        "offline_url": "",
+        "preview_url": "",
+        "iframe_url": "",
+        "single_iframe_url": "",
+        "single_once_iframe_url": ""
+    },
+    "deployment_status": "deployed",
+    "name":"test"
+}
+@pytest.fixture
+def mock_asset_draft_response():
+    return {
+        "deployment_status": "draft",
+        "deployment__links": {},
+        "name": "test_asset",
+    }
 
 @pytest.fixture
 def mock_redeploy_response():
