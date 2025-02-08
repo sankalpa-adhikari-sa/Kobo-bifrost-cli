@@ -42,11 +42,11 @@ def preview_asset_snapshot(
         progress.update(task, completed=100)
 
     if response is not None and response.status_code == 201:
-        print("✅ Successfully fetched asset snapshots")
+        print("[green]✅ Successfully fetched asset snapshots[/green]")
         return cast(Dict, response.json())
     else:
-        print("❌ Failed to fetch asset snapshot.")
-        print("Survey form may be empty or untitled or invalid asset ID.")
+        print("[red]❌ Failed to fetch asset snapshot.[/red]")
+        print("[red]Survey form may be empty or untitled or invalid asset ID.[/red]")
         return None
 
 

@@ -27,9 +27,11 @@ def submission_without_auth(asset_id: str, base_url: str) -> None:
 
     response = _make_request("POST", url=permission_url, data=permission)
     if response is not None and response.status_code == 201:
-        print("✅ Successfully updated permission to submit data without auth.")
+        print(
+            "[green]✅ Successfully updated permission to submit data without auth.[/green]"
+        )
     else:
-        print("💥 Failed to set permissions.")
+        print("[red]💥 Failed to set permissions.[/red]")
 
 
 def clone_asset_permission(asset_id: str, source_asset_id: str, base_url: str) -> None:
@@ -51,13 +53,13 @@ def clone_asset_permission(asset_id: str, source_asset_id: str, base_url: str) -
     if response is not None and response.status_code == 200:
 
         print(
-            f"✅ Successfully cloned permission from \n source_asset_id: {source_asset_id}"
+            f"[green]✅ Successfully cloned permission from \n source_asset_id: {source_asset_id}[/green]"
         )
 
     else:
         print(
-            "💥 Failed to clone permission."
-            "Make Sure the source and target asset uid are valid."
+            "[red]💥 Failed to clone permission."
+            "Make Sure the source and target asset uid are valid.[/red]"
         )
 
 

@@ -78,7 +78,7 @@ def set_credentials(
         raise ValueError("API URL and API Key cannot be None.")
 
     save_credentials(api_key, api_url)
-    print("✅ Credentials saved securely.")
+    print("[green]✅ Credentials saved securely.[/green]")
 
 
 @app.command()
@@ -86,10 +86,10 @@ def remove_credentials() -> None:
     """Clear saved API credentials (API key and API URL)."""
     try:
         delete_credentials()
-        print("✅ Credentials removed.")
+        print("[green]✅ Credentials removed.[/green]")
     except Exception:
 
-        print("❌ No credentials were found to delete.")
+        print("[red]❌ No credentials were found to delete.[/red]")
 
 
 @app.command()
@@ -97,9 +97,11 @@ def status() -> None:
     """Check the current credentials status."""
     api_key, api_url = get_credentials()
     if api_key and api_url:
-        print(f"✅ You have set API credentials in with API URL: {api_url}")
+        print(
+            f"[green]✅ You have set API credentials in with API URL: {api_url}[/green]"
+        )
     else:
-        print("❌ You are not saved any API credentials.")
+        print("[red]❌ You are not saved any API credentials.[/red]")
 
 
 if __name__ == "__main__":

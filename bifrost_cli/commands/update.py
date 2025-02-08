@@ -53,12 +53,12 @@ def update_form(
 
     if response is not None:
         print(
-            "✅ Successfully updated form "
-            f"{response['messages']['updated'][0]['uid']}"
+            "[green]✅ Successfully updated form "
+            f"{response['messages']['updated'][0]['uid']}[/green]"
         )
         return cast(str, response["messages"]["updated"][0]["uid"])
     else:
-        print("❌ Failed to update form.")
+        print("[red] ❌ Failed to update form.[/red]")
         return None
 
 

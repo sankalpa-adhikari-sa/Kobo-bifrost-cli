@@ -20,7 +20,7 @@ def get_credentials() -> Tuple[Optional[str], Optional[str]]:
         return api_key, api_url
     else:
         print(
-            "❌ No credentials were found."
+            "[red]❌ No credentials were found.[/red]"
             "Use [blue]set-credentials[/blue] command to setup credentials."
         )
         raise typer.Abort()
@@ -34,7 +34,7 @@ def _make_request(method: str, url: str, **kwargs: Any) -> requests.Response:
 
         return response
     except requests.RequestException as e:
-        print(f"Error during making {method} request: {e}")
+        print(f"[red]Error during making {method} request: {e} [red]")
         raise
 
 
@@ -65,14 +65,14 @@ def _wait_for_completion(url: str, timeout: Optional[int] = 180) -> Optional[Dic
             # Call to the function that checks the status
             status_response = _check_status(url)
             if status_response is None:
-                print("❌ Error: Received None as status response.")
+                print("[red]❌ Error: Received None as status response.[/red]")
                 return None
         except Exception:
-            print("❌ Error checking status.")
+            print("[red]❌ Error checking status.[/red]")
             return None
 
         if "status" not in status_response:
-            print("❌ Invalid response format. Missing 'status' field.")
+            print("[red]❌ Invalid response format. Missing 'status' field.[/red]")
             return None
 
         if status_response["status"] == "processing":
@@ -110,13 +110,13 @@ def _import_form(
     """
     if not file_path or file_path.suffix.lower() not in [".xls", ".xlsx"]:
         print(
-            "Error: The file must be an .xls or .xlsx form. "
-            "Please provide a valid file path."
+            "[red]Error: The file must be an .xls or .xlsx form. "
+            "Please provide a valid file path.[/red]"
         )
         return None
 
     if not file_path.exists():
-        print(f"Error: File not found at {file_path}.")
+        print(f"[red]Error: File not found at {file_path}. [/red]")
         return None
 
     try:
@@ -135,17 +135,20 @@ def _import_form(
                 import_response = _wait_for_completion(current_form_import_url)
                 return import_response
             else:
-                print("Failed to start import. " f"Status code: {response.status_code}")
+                print(
+                    "[red]Failed to start import. "
+                    f"Status code: {response.status_code} [/red]"
+                )
                 print(response.text)
                 return None
     except AttributeError:
         print(
-            "Error: Unexpected response format or None received. "
-            "Please check your network connection or the server."
+            "[red]Error: Unexpected response format or None received. "
+            "Please check your network connection or the server.[/red]"
         )
         return None
     except FileNotFoundError:
-        print(f"Error: The file at {file_path} could not be found.")
+        print(f"[red]Error: The file at {file_path} could not be found.[/red]")
         return None
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
@@ -256,16 +259,13 @@ def update_asset_info(
 
     if not asset_id_updated and asset_id:
         lines.append(f"Asset ID= {asset_id}\n")
-        print("Added Asset ID to info.txt.")
 
     if not xlsx_path_updated and xlsx_path:
         lines.append(f"XlsForm Path= {xlsx_path}\n")
-        print("Added XlsForm Path to info.txt.")
 
     if not download_path_updated and download_path:
         lines.append(f"Download Path= {download_path}\n")
-        print("Added Download Path to info.txt.")
 
     with open(INFO_FILE, "w") as f:
         f.writelines(lines)
-        print("Updated info.txt successfully.")
+        print("[green]Updated info.txt successfully.[/green]")

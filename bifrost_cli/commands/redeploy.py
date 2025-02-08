@@ -38,7 +38,7 @@ def redeploy_form(asset_id: str, base_url: str) -> None:
         progress.update(task, completed=100)
 
     if response.status_code != 200:
-        print("Error: The form you are trying to redeploy may not exist.")
+        print("[red]Error: The form you are trying to redeploy may not exist.[/red]")
         return
     version_to_deploy = response.json()["version_id"]
 
@@ -52,7 +52,7 @@ def redeploy_form(asset_id: str, base_url: str) -> None:
     )
 
     if response.status_code == 200:
-        print("✅ Successfully Re-deployed form")
+        print("[green]✅ Successfully Re-deployed form[/green]")
         res = response.json()
 
         table = Table(title="Re-deployment Details")
@@ -75,12 +75,12 @@ def redeploy_form(asset_id: str, base_url: str) -> None:
 
         console.print(table)
     elif response.status_code == 405:
-        print("Error: The form cannot be redeployed.")
+        print("[red]Error: The form cannot be redeployed.[/red]")
         print(
-            "Please check the deployment status of the form and ensure it is deployed before attempting to redeploy."
+            "[red]Please check the deployment status of the form and ensure it is deployed before attempting to redeploy.[/red]"
         )
     else:
-        print("Something went wrong!")
+        print("[red]Something went wrong![/red]")
 
 
 @app.command()

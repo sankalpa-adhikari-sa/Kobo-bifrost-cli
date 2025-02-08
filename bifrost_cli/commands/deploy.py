@@ -22,7 +22,6 @@ def deploy_form(asset_id: str, base_url: str) -> None:
         base_url (str): The base URL of the API.
         asset_id (str): The ID of the form.
     """
-    console = Console()
 
     deployment_url = f"{base_url}assets/{asset_id}/deployment/"
     deployment_data = {"active": True}
@@ -32,8 +31,9 @@ def deploy_form(asset_id: str, base_url: str) -> None:
         TextColumn("[progress.description]{task.description}"),
         transient=True,
     ) as progress:
-        task = progress.add_task(description="Starting form deployment...", start=False)
-
+        task = progress.add_task(
+            description="Starting Form deployment Procedure...", start=False
+        )
         progress.start_task(task)
         response = _make_request(
             "POST",
@@ -46,7 +46,7 @@ def deploy_form(asset_id: str, base_url: str) -> None:
         if response.status_code == 200:
             res = response.json()
 
-            table = Table(title="Deployment Details")
+            table = Table(title="\nDeployment Details")
             table.add_column("SN", justify="right", overflow="fold")
             table.add_column("Asset ID", justify="right", overflow="fold")
             table.add_column("Deployment Status", justify="right", overflow="fold")
@@ -57,16 +57,17 @@ def deploy_form(asset_id: str, base_url: str) -> None:
                 res["asset"]["deployment_status"],
                 res["asset"]["deployment__links"]["url"],
             )
+            console = Console()
             console.print(table)
-            print("✅ Successfully Deployed form")
+            print("[green]✅ Successfully Deployed form[/green]")
         else:
             print(
-                "Error: The form you are trying to deploy may not exist or \n"
-                "The form cannot be deployed as it may already be deployed."
+                "[red]Error: The form you are trying to deploy may not exist or \n"
+                "The form cannot be deployed as it may already be deployed.[/red]"
             )
             print(
-                "Please check the form's deployment status and "
-                "Ensure it hasn't been deployed before proceeding."
+                "[red]Please check the form's deployment status and "
+                "Ensure it hasn't been deployed before proceeding.[/red]"
             )
 
 

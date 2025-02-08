@@ -38,7 +38,7 @@ def export_data(
         params={"format": "json"},
     )
     if response.status_code == 400:
-        print("Somthing went Wrong! Try again....")
+        print("[red]Somthing went Wrong! Try again....[/red]")
         return
 
     exp = response.json()["url"]
@@ -46,16 +46,20 @@ def export_data(
     data_url_res = _wait_for_completion(url=exp)
 
     if data_url_res is None:
-        print("Somthing went Wrong! Try again....")
+        print("[red]Somthing went Wrong! Try again....[/red]")
         return
     data_res = _make_request(method="GET", url=data_url_res["result"])
 
     if data_res.status_code == 200:
         with open(file_path, "wb") as file:
             file.write(data_res.content)
-            print(f"File downloaded successfully and saved to {file_path}.")
+            print(
+                f"[green]File downloaded successfully and saved to {file_path}.[/green]"
+            )
     else:
-        print(f"Failed to download file. Status code: {data_res.status_code}")
+        print(
+            f"[red]Failed to download file. Status code: {data_res.status_code}[/red]"
+        )
 
 
 @app.command()
@@ -137,8 +141,8 @@ def csv(
     download_path = Path(download_path).resolve()
     if not download_path.exists():
         print(
-            f"Error: No such directory: {download_path}. "
-            "Please check the path and try again."
+            f"[red]Error: No such directory: {download_path}. "
+            "Please check the path and try again.[/red]"
         )
         return None
     file_path = os.path.join(download_path, f"{output_name}.csv")
@@ -246,8 +250,8 @@ def xls(
     download_path = Path(download_path).resolve()
     if not download_path.exists():
         print(
-            f"Error: No such directory: {download_path}. "
-            "Please check the path and try again."
+            f"[red]Error: No such directory: {download_path}. "
+            "Please check the path and try again.[/red]"
         )
         return None
     file_path = os.path.join(download_path, f"{output_name}.xlsx")

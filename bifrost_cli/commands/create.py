@@ -33,7 +33,6 @@ def create_form(file_path: Path, base_url: str) -> Union[None, str]:
             Asset UID if completed or returns None if an error occurs.
 
     """
-    console = Console()
     import_url = base_url + "imports/"
     data = {"library": "false"}
     with Progress(
@@ -61,7 +60,7 @@ def create_form(file_path: Path, base_url: str) -> Union[None, str]:
         console.print(table)
         return cast(str, res["uid"])
     else:
-        print("Failed to create form.")
+        print("[red]Error: Failed to create form.[/red]")
         return None
 
 

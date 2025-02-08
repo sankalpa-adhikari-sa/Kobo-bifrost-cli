@@ -60,7 +60,7 @@ def list_assets() -> None:
             )
         console.print(table)
     else:
-        console.print("[bold red]Failed to fetch asset data.[/bold red]")
+        console.print("[red]Failed to fetch asset data.[/red]")
 
 
 if __name__ == "__main__":

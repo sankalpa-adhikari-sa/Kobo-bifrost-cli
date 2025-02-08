@@ -62,7 +62,7 @@ def get_deployment_links(
                 "❌ [bold red]No deployment links found. The asset might not have been deployed yet.[/bold red]"
             )
     else:
-        print("❌ Failed to fetch asset.")
+        print("[red]❌ Failed to fetch asset.[/red]")
 
 
 @app.command()
