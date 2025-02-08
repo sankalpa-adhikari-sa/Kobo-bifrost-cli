@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bifrost-cli"
-version = "0.0.2"
+version = "0.0.3"
 authors = [
     { name = "Sankalpa Adhikari", email = "sankalpa2522@gmail.com" },
 ]

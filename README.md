@@ -19,7 +19,7 @@ python --version
 To install/update Bifrost CLI Tool. Navigate to your terminal and run following command.
 
 ```python
-pip install git+https://github.com/sankalpa-adhikari-sa/Kobo-bifrost-cli.git@v0.0.2
+pip install git+https://github.com/sankalpa-adhikari-sa/Kobo-bifrost-cli.git@v0.0.3
 ```
 
 \_Note: It is recommended to install this package by creating a python virtual enviroment to avoid any conficts that may arise due to changes in dependencies packages version.
